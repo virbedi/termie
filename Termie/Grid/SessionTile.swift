@@ -24,6 +24,9 @@ struct SessionTile: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .contextMenu {
+            Button("Rename") {
+                store.beginRenaming(session.id)
+            }
             Button("Use Terminal Title") {
                 session.followTitle()
             }
@@ -43,8 +46,12 @@ struct SessionTile: View {
     private var header: some View {
         HStack(spacing: 8) {
             statusMark
+                .contentShape(Rectangle())
+                .onTapGesture { store.focus(session.id) }
             name
             Spacer(minLength: 4)
+                .contentShape(Rectangle())
+                .onTapGesture { store.focus(session.id) }
             if case .exited = session.presence {
                 Button("Restart") {
                     store.restart(session)
@@ -65,9 +72,11 @@ struct SessionTile: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background(.bar)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            store.focus(session.id)
+        .onChange(of: store.renamingSessionID) { _, id in
+            guard id == session.id else { return }
+            draft = session.displayName
+            editing = true
+            store.renamingSessionID = nil
         }
     }
 
@@ -97,6 +106,9 @@ struct SessionTile: View {
             .onTapGesture(count: 2) {
                 draft = session.displayName
                 editing = true
+            }
+            .onTapGesture {
+                store.focus(session.id)
             }
         }
     }

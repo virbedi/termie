@@ -34,6 +34,9 @@ struct SessionSidebar: View {
             }
             .tag(session.id)
             .contextMenu {
+                Button("Rename") {
+                    store.beginRenaming(session.id)
+                }
                 Button("Use Terminal Title") {
                     session.followTitle()
                 }

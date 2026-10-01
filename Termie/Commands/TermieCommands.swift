@@ -10,6 +10,10 @@ struct TermieCommands: Commands {
             }
             .keyboardShortcut("t", modifiers: .command)
 
+            Button("Rename Terminal") {
+                store.beginRenamingFocused()
+            }
+
             Button("Close Terminal") {
                 store.closeFocused()
             }

@@ -31,7 +31,7 @@ A new window starts with one terminal. Add another with **⌘T**, or the **+** b
 
 Drag the grip in the gap between tiles to resize them. Two tiles split the window. Three give a large tile beside a stack. Four make a cross. The sizes stick until you add or close a session.
 
-Claude names its iTerm tabs on its own. Termie reads that same title, so a tile called “fix auth” is the session doing that work. Double-click a name to pin your own, and choose **Use Terminal Title** when you want Claude’s name back.
+Claude names its iTerm tabs on its own. Termie reads that same title, so a tile called “fix auth” is the session doing that work. Choose **Rename** to give it your own name. That name stays even when Claude changes the title. **Use Terminal Title** lets Claude name it again.
 
 | | |
 | --- | --- |

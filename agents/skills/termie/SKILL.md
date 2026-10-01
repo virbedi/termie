@@ -29,7 +29,7 @@ SwiftTerm is pinned to revision `4d5eeea89ed7c0fabffea9c8415cc392a6a06a31` becau
 
 ## Names
 
-Claude sets iTerm tab names with OSC 0/2. `setTerminalTitle` and OSC 0/1/2 both feed `AttentionMonitor`. `automaticSessionTitle` drops bare shell names (`zsh`, `bash`) so a later task title can replace "Terminal". A name the user types is pinned until they choose "Use Terminal Title".
+Claude sets iTerm tab names with OSC 0/2. `setTerminalTitle` and OSC 0/1/2 both feed `AttentionMonitor`. `automaticSessionTitle` drops bare shell names (`zsh`, `bash`) so a later task title can replace "Terminal". A non-empty name from Rename is stored as `pinnedName` and `displayName` uses it instead of later titles. An empty name, or Use Terminal Title, clears the pin.
 
 ## Attention
 

@@ -45,7 +45,7 @@ final class TerminalSession: Identifiable {
 
     func commitName(_ raw: String) {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty || trimmed == (automaticTitle ?? fallbackName) {
+        if trimmed.isEmpty {
             pinnedName = nil
         } else {
             pinnedName = trimmed

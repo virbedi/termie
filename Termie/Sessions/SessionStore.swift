@@ -7,6 +7,7 @@ import UserNotifications
 final class SessionStore {
     private(set) var sessions: [TerminalSession] = []
     var focusedID: UUID?
+    var renamingSessionID: UUID?
     private var nextOrdinal = 1
     private var ticker: Timer?
     private var keyMonitor: Any?
@@ -87,10 +88,24 @@ final class SessionStore {
         focus(sessions[index].id)
     }
 
+    func beginRenaming(_ id: UUID) {
+        guard sessions.contains(where: { $0.id == id }) else { return }
+        focus(id)
+        renamingSessionID = id
+    }
+
+    func beginRenamingFocused() {
+        guard let focusedID else { return }
+        beginRenaming(focusedID)
+    }
+
     func close(_ id: UUID) {
         guard let index = sessions.firstIndex(where: { $0.id == id }) else { return }
         sessions[index].close()
         sessions.remove(at: index)
+        if renamingSessionID == id {
+            renamingSessionID = nil
+        }
         if focusedID == id {
             if sessions.isEmpty {
                 focusedID = nil
