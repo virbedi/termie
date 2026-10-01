@@ -29,8 +29,8 @@ No Apple Developer account is required. The build is ad hoc signed, and a copy y
 
 Running an agent is not the same as running a command. A session lasts a long time, spends most of it working, and only needs you when it stops. Termie is arranged around that.
 
-- **Tiles name themselves.** Claude already publishes a short title into iTerm tabs. Termie reads that same title, so a tile can say “fix auth” instead of `zsh`. Double-click the name to pin your own, and choose **Use Terminal Title** when you want Claude’s name back.
-- **A tile tells you when it wants you.** While Claude is printing or showing progress, the tile says **Working**. When it rings the bell, sends a notification, or finishes and waits, the tile turns orange, moves into the large cell, and the Dock badge updates. If Termie is in the background you also get a notification. Focus the tile to clear it. A shell that has simply gone quiet is **Idle**.
+- **Tiles name themselves.** Claude already publishes a short title into iTerm tabs. Termie reads that same title, so a tile can say “fix auth” instead of `zsh`. Rename it from the tile, the sidebar, or **Terminal → Rename Terminal**. That name stays when Claude changes the title. **Use Terminal Title** lets Claude name it again. Double-clicking the name still starts a rename.
+- **A tile tells you when it wants you.** While Claude is printing or showing progress, the tile says **Working**. When it rings the bell, sends a notification, or finishes and waits, that tile turns orange where it already sits, and the Dock badge updates. It does not move. If Termie is in the background you also get a notification. Focus the tile to clear it. A shell that has simply gone quiet is **Idle**.
 - **New terminals talk the iTerm channel.** That setting is on by default, which is why Claude sends those titles and pings. It applies to terminals you open after you change it.
 
 If a session finishes and the tile stays idle, ask Claude to ring the bell as well. In `~/.claude/settings.json`:
@@ -47,7 +47,7 @@ If a session finishes and the tile stays idle, ask Claude to ring the bell as we
 
 **⌘T** opens a terminal. **⌘W** closes the one you are typing in. **⌘⇧R** restarts it.
 
-Drag the grip in the gap between tiles to resize them. Two tiles split the window. Three give a large tile beside a stack. Four make a cross. Those sizes stay until you add or close a session.
+Drag the grip in the gap between tiles to resize them. Two tiles split the window. Three give a large tile beside a stack. Four make a cross. Focusing a tile, or marking it as needing you, does not move it. Sizes stay until you drag a divider or add or close a session.
 
 | Shortcut | |
 | --- | --- |
