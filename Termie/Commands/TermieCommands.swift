@@ -36,9 +36,10 @@ struct TermieCommands: Commands {
 
             Divider()
 
-            ForEach(0..<min(store.sessions.count, 9), id: \.self) { index in
-                Button("Focus \(store.sessions[index].displayName)") {
-                    store.focusIndex(index)
+            let jumpSessions = Array(store.sessions.prefix(9))
+            ForEach(Array(jumpSessions.enumerated()), id: \.element.id) { index, session in
+                Button("Focus \(session.displayName)") {
+                    store.focus(session.id)
                 }
                 .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
             }
