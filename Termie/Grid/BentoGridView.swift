@@ -22,7 +22,7 @@ struct BentoGridView: View {
             }
         } else {
             GeometryReader { proxy in
-                let display = resolvedFrames(in: proxy.size)
+                let display = resolvedFrames()
                 let dividers = tileDividers(in: display)
                 ZStack(alignment: .topLeading) {
                     ForEach(Array(store.sessions.enumerated()), id: \.element.id) { index, session in
@@ -70,15 +70,11 @@ struct BentoGridView: View {
         )
     }
 
-    private func resolvedFrames(in size: CGSize) -> [UnitRect] {
+    private func resolvedFrames() -> [UnitRect] {
         if userSized, frames.count == store.sessions.count {
             return frames
         }
-        return bentoFrames(
-            count: store.sessions.count,
-            emphasis: emphasizedIndex,
-            wide: size.width >= size.height
-        )
+        return bentoFrames(count: store.sessions.count)
     }
 
     private func resize(_ divider: TileDivider, index: Int, translation: CGSize, in size: CGSize) {
@@ -88,7 +84,7 @@ struct BentoGridView: View {
             base = drag.frames
             origin = drag.divider
         } else {
-            base = resolvedFrames(in: size)
+            base = resolvedFrames()
             origin = divider
             drag = DividerDrag(index: index, frames: base, divider: origin)
         }
@@ -104,20 +100,6 @@ struct BentoGridView: View {
         let length = axis == .vertical ? size.width : size.height
         guard length > 1 else { return 0.12 }
         return min(0.4, max(0.12, 160 / length))
-    }
-
-    private var emphasizedIndex: Int {
-        if let index = store.sessions.firstIndex(where: {
-            if case .needsYou = $0.presence { return true }
-            return false
-        }) {
-            return index
-        }
-        if let focusedID = store.focusedID,
-           let index = store.sessions.firstIndex(where: { $0.id == focusedID }) {
-            return index
-        }
-        return 0
     }
 }
 

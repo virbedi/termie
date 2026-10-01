@@ -2,13 +2,13 @@ import Testing
 @testable import TermieCore
 
 @Test func twoColumnsShareOneVerticalDivider() {
-    let frames = bentoFrames(count: 2, emphasis: 0, wide: true)
+    let frames = bentoFrames(count: 2)
     let dividers = tileDividers(in: frames)
     #expect(dividers == [TileDivider(axis: .vertical, position: 0.5, start: 0, end: 1)])
 }
 
 @Test func draggingAColumnDividerGivesWidthToTheLeftTile() {
-    let frames = bentoFrames(count: 2, emphasis: 0, wide: true)
+    let frames = bentoFrames(count: 2)
     let divider = tileDividers(in: frames)[0]
     let resized = resizeTiles(frames, divider: divider, to: 0.7)
     #expect(abs(resized[0].width - 0.7) < 0.000_001)
@@ -17,7 +17,7 @@ import Testing
 }
 
 @Test func aDividerStopsBeforeATileShrinksBelowTheMinimum() {
-    let frames = bentoFrames(count: 2, emphasis: 0, wide: true)
+    let frames = bentoFrames(count: 2)
     let divider = tileDividers(in: frames)[0]
     let resized = resizeTiles(frames, divider: divider, to: 0.99, minimum: 0.2)
     #expect(abs(resized[0].width - 0.8) < 0.000_001)
@@ -25,7 +25,7 @@ import Testing
 }
 
 @Test func aStackSeamResizesEveryTileOnThatLine() {
-    let frames = bentoFrames(count: 3, emphasis: 0, wide: true)
+    let frames = bentoFrames(count: 3)
     let dividers = tileDividers(in: frames)
     let vertical = dividers.first { $0.axis == .vertical }
     let horizontal = dividers.first { $0.axis == .horizontal }
@@ -46,7 +46,7 @@ import Testing
 }
 
 @Test func fourTilesShareACrossOfDividers() {
-    let frames = bentoFrames(count: 4, emphasis: 0, wide: true)
+    let frames = bentoFrames(count: 4)
     let dividers = tileDividers(in: frames)
     #expect(dividers.count == 2)
     #expect(dividers.contains(TileDivider(axis: .vertical, position: 0.62, start: 0, end: 1)))

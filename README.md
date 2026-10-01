@@ -36,7 +36,7 @@ Claude names its iTerm tabs on its own. Termie reads that same title, so a tile 
 | | |
 | --- | --- |
 | **Working** | The session is still printing, or Claude’s progress indicator is running. |
-| **Needs you** | Claude rang the bell, sent a notification, or finished and is waiting. The tile gets an orange edge and the large cell, the Dock badge updates, and you get a notification if Termie is in the background. Focus the tile to clear it. |
+        | **Needs you** | Claude rang the bell, sent a notification, or finished and is waiting. The tile gets an orange edge where it already sits, the Dock badge updates, and you get a notification if Termie is in the background. Focus the tile to clear it. |
 | **Idle** | The shell is sitting quietly and has not asked for you. |
 
 **⌘]** and **⌘[** move between tiles. **⌘1** through **⌘9** jump to a tile. **⌘⇧R** restarts the focused shell. The menu bar icon lists every session, with the ones that need you called out.
