@@ -4,13 +4,13 @@
 
 <h1 align="center">Termie</h1>
 
-<p align="center">
-  Several real terminals, one window.
-</p>
+<p align="center">Several real terminals, one window.</p>
 
-Termie is a native macOS app for keeping a handful of shells in view at the same time. It is meant for running more than one [Claude Code](https://code.claude.com) session: each tile keeps a name, tiles that are still working stay quiet, and the one that needs you is marked.
+Termie is a native macOS app for watching more than one shell at a time. It is built for [Claude Code](https://code.claude.com): a session only needs you for the moment it stops and asks something, so the useful setup is several of them in one view. Each tile keeps a name, tiles that are still working stay quiet, and the one that needs you is marked.
 
-Each tile is your login shell, with the same PATH, colors, mouse, and clipboard you get in Terminal, VS Code, or Cursor.
+A tile is your login shell. Your PATH, dotfiles, mouse, and clipboard are the ones you already use in Terminal, VS Code, or Cursor. Termie does not wrap the shell or add its own keybinding grammar.
+
+There is no downloadable build yet. You build it from source, and it runs on macOS only.
 
 ## Install
 
@@ -23,33 +23,40 @@ xcodebuild -project Termie.xcodeproj -scheme Termie -destination 'platform=macOS
 open build/Build/Products/Debug/Termie.app
 ```
 
-No Apple Developer account is required. The project builds ad hoc. Termie is not sandboxed, so the shell can see your files, Homebrew, and the rest of your tools. The first window opens your login shell in your home folder.
+No Apple Developer account is required. The build is ad hoc signed, and a copy you produce this way opens normally. Termie is not sandboxed, so the shell can see your files, Homebrew, and the rest of your tools. The first window opens one login shell in your home folder.
 
-## Use it
+## Working with Claude Code
 
-A new window starts with one terminal. Add another with **⌘T**, or the **+** button. **⌘W** closes the one you are typing in.
+Running an agent is not the same as running a command. A session lasts a long time, spends most of it working, and only needs you when it stops. Termie is arranged around that.
 
-Drag the grip in the gap between tiles to resize them. Two tiles split the window. Three give a large tile beside a stack. Four make a cross. The sizes stick until you add or close a session.
+- **Tiles name themselves.** Claude already publishes a short title into iTerm tabs. Termie reads that same title, so a tile can say “fix auth” instead of `zsh`. Double-click the name to pin your own, and choose **Use Terminal Title** when you want Claude’s name back.
+- **A tile tells you when it wants you.** While Claude is printing or showing progress, the tile says **Working**. When it rings the bell, sends a notification, or finishes and waits, the tile turns orange, moves into the large cell, and the Dock badge updates. If Termie is in the background you also get a notification. Focus the tile to clear it. A shell that has simply gone quiet is **Idle**.
+- **New terminals talk the iTerm channel.** That setting is on by default, which is why Claude sends those titles and pings. It applies to terminals you open after you change it.
 
-Claude names its iTerm tabs on its own. Termie reads that same title, so a tile called “fix auth” is the session doing that work. Double-click a name to pin your own, and choose **Use Terminal Title** when you want Claude’s name back.
+If a session finishes and the tile stays idle, ask Claude to ring the bell as well. In `~/.claude/settings.json`:
 
-| | |
+```json
+{
+  "preferredNotifChannel": "terminal_bell"
+}
+```
+
+**Option as Esc** is on by default. That is the key setting Claude Code shortcuts expect, the same one iTerm calls “Esc+”.
+
+## Use the window
+
+**⌘T** opens a terminal. **⌘W** closes the one you are typing in. **⌘⇧R** restarts it.
+
+Drag the grip in the gap between tiles to resize them. Two tiles split the window. Three give a large tile beside a stack. Four make a cross. Those sizes stay until you add or close a session.
+
+| Shortcut | |
 | --- | --- |
-| **Working** | The session is still printing, or Claude’s progress indicator is running. |
-| **Needs you** | Claude rang the bell, sent a notification, or finished and is waiting. The tile gets an orange edge and the large cell, the Dock badge updates, and you get a notification if Termie is in the background. Focus the tile to clear it. |
-| **Idle** | The shell is sitting quietly and has not asked for you. |
+| **⌘]** / **⌘[** | Next and previous tile |
+| **⌘1**–**⌘9** | Jump to a tile |
+| Menu bar icon | Every session, with the ones that need you called out |
+| Window → Always on Top | Keep the grid above other windows |
 
-**⌘]** and **⌘[** move between tiles. **⌘1** through **⌘9** jump to a tile. **⌘⇧R** restarts the focused shell. The menu bar icon lists every session, with the ones that need you called out.
-
-### Settings
-
-Open Settings to change:
-
-- **Shell.** Leave this empty to use your login shell. New terminals are login shells, so `.zprofile` and `.zshrc` still run.
-- **Starting folder.** New terminals open in the focused session’s directory, or in a folder you choose.
-- **Font size**, and **Option as Esc**, which Claude Code shortcuts expect.
-- **iTerm channel.** On by default, so Claude sends the same titles and “needs you” pings it sends iTerm. Changing this applies to terminals you open afterward.
-- **Beep** when a tile needs you.
+New terminals start in the focused session’s folder. Settings can point them at your home directory, or at a folder you type, and can change the font size. **Beep when a terminal needs you** is off until you turn it on.
 
 ## For contributors
 
