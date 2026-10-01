@@ -1,0 +1,16 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test TermieCore
+        run: swift test --package-path Packages/TermieCore --disable-xctest
+      - name: Build Termie
+        run: xcodebuild -project Termie.xcodeproj -scheme Termie -destination 'platform=macOS' -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO build

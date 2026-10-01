@@ -15,7 +15,8 @@ Termie shows several real terminals in one window. The useful case is several Cl
 ## Layout
 
 - App target: `Termie/`, Xcode project `Termie.xcodeproj`. The window, settings, about box, menu bar, and always-on-top behavior come from [simonweniger/swift-macos-template](https://github.com/simonweniger/swift-macos-template) (MIT, see `LICENSE`).
-- Pure logic: `Packages/TermieCore`. Title filtering, OSC interpretation, attention, and bento frames live here. Add tests in `Packages/TermieCore/Tests`.
+- Pure logic: `Packages/TermieCore`. Title filtering, OSC interpretation, attention, bento frames, and tile dividers live here. Add tests in `Packages/TermieCore/Tests`.
+- Tile resize uses `tileDividers` and `resizeTiles`. A drag moves every tile that shares that seam and will not shrink a tile below the minimum. Custom sizes stay until the set of sessions changes. Place divider handles with `position` in the grid, not `offset`; offset leaves the hit target at the top-left. SwiftTerm already applies the new view size to the PTY.
 - Terminal view: `Termie/Sessions`. `TermieTerminalView` subclasses SwiftTerm `LocalProcessTerminalView`.
 
 ## Shell

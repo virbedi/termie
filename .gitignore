@@ -1,40 +1,24 @@
-################################
-### Xcode project .gitignore ###
-################################
-
-### macOS ###
-
 .DS_Store
 
-### User settings and such ###
-
+# User-specific Xcode data. The shared scheme and Swift package pins stay tracked.
 xcuserdata/
-*.xcworkspace
-!default.xcworkspace
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
 
-### Build Artifacts ###
-
+# Build products
 *.hmap
 *.ipa
 *.dSYM.zip
 *.dSYM
-
-*.xcworkspace
-!default.xcworkspace
-xcuserdata
-profile
 *.moved-aside
-DerivedData
-.idea/
-*.xccheckout
+DerivedData/
 build/
+.idea/
 
-### Swift Package Manager ###
-
-.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+# Swift Package Manager build cache. Package.resolved is not ignored.
+.swiftpm/
 .build/
-
-### Playgrounds ###
 
 timeline.xctimeline
 playground.xcworkspace
