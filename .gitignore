@@ -1,0 +1,24 @@
+.DS_Store
+
+# User-specific Xcode data. The shared scheme and Swift package pins stay tracked.
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Build products
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.moved-aside
+DerivedData/
+build/
+.idea/
+
+# Swift Package Manager build cache. Package.resolved is not ignored.
+.swiftpm/
+.build/
+
+timeline.xctimeline
+playground.xcworkspace

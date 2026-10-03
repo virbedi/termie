@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Termie window — Slice &amp; Co.</title>
+<style>
+  /* Window-only crop of the hero mock for a tighter README shot */
+  :root {
+    --tile: #f7f4f1;
+    --bar: #ebe4dc;
+    --term: #12110f;
+    --green: #34c759;
+    --orange: #ff9f0a;
+    --muted: #8a8178;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 1220px;
+    height: 760px;
+    overflow: hidden;
+    background: #2a211c;
+    font-family: "SF Pro Text", "Avenir Next", "Segoe UI", sans-serif;
+  }
+  .termie {
+    width: 1220px;
+    height: 760px;
+    border-radius: 12px;
+    background: #e9e2da;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #1c1917;
+  }
+  .window-chrome {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    background: linear-gradient(180deg, #f3ece5, #e4dcd3);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .traffic { display: flex; gap: 7px; }
+  .traffic span { width: 12px; height: 12px; border-radius: 50%; }
+  .traffic .r { background: #ff5f57; }
+  .traffic .y { background: #febc2e; }
+  .traffic .g { background: #28c840; }
+  .window-chrome .title {
+    flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: #3a322c;
+  }
+  .toolbar { display: flex; gap: 8px; align-items: center; }
+  .chip {
+    font-size: 11px; padding: 4px 8px; border-radius: 6px;
+    background: rgba(0, 0, 0, 0.06); color: #5a5148;
+  }
+  .plus {
+    width: 26px; height: 22px; border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.1); background: #fff;
+    display: grid; place-items: center; font-size: 14px; color: #444;
+  }
+  .body {
+    flex: 1; display: grid; grid-template-columns: 220px 1fr; min-height: 0;
+  }
+  .sidebar {
+    background: #ddd5cb; border-right: 1px solid rgba(0, 0, 0, 0.08);
+    padding: 12px 10px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .search {
+    height: 28px; border-radius: 7px; background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(0, 0, 0, 0.06); color: #7a7168; font-size: 12px;
+    display: flex; align-items: center; padding: 0 10px; margin-bottom: 8px;
+  }
+  .side-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px; border-radius: 8px; font-size: 12.5px;
+  }
+  .side-row.active { background: rgba(10, 132, 255, 0.16); }
+  .side-row .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .side-row .meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .side-row .name { font-weight: 600; color: #2a2420; }
+  .side-row .path {
+    font-size: 10.5px; color: #7a7168; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .dot.working { background: var(--green); }
+  .dot.needs { background: var(--orange); }
+  .dot.idle { background: #9a9188; }
+  .grid-wrap { padding: 8px; min-height: 0; background: #d8d0c6; }
+  .grid {
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    grid-template-rows: 1.05fr 0.95fr;
+    gap: 10px;
+  }
+  .tile {
+    background: var(--tile); border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+  }
+  .tile.focused { border: 2px solid rgba(10, 132, 255, 0.85); }
+  .tile.needs-you { border: 2px solid rgba(255, 159, 10, 0.95); }
+  .tile-head {
+    height: 32px; background: var(--bar);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex; align-items: center; gap: 8px; padding: 0 10px; flex: none;
+  }
+  .status {
+    display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted);
+  }
+  .status .mark { width: 9px; height: 9px; border-radius: 50%; }
+  .status.working .mark { background: var(--green); box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.2); }
+  .status.needs .mark { background: var(--orange); box-shadow: 0 0 0 3px rgba(255, 159, 10, 0.22); }
+  .status.idle .mark { background: #9a9188; }
+  .status.working { color: #1f8a3d; }
+  .status.needs { color: #b36b00; }
+  .tile-title { font-size: 12.5px; font-weight: 600; color: #2a2420; }
+  .tile-actions { margin-left: auto; color: #8a8178; font-size: 11px; }
+  .term {
+    flex: 1; background: var(--term); color: #e8e2d8;
+    font-family: "SF Mono", "Menlo", "Consolas", monospace;
+    font-size: 11.5px; line-height: 1.45; padding: 10px 12px;
+    overflow: hidden; white-space: pre-wrap; min-height: 0;
+  }
+  .dim { color: #8a8378; } .ok { color: #7dcea0; } .warn { color: #f0c674; }
+  .cyan { color: #7fdbda; } .pink { color: #f5a9c5; } .blue { color: #82aaff; }
+  .prompt { color: #c3e88d; } .fish { color: #80cbc4; } .hl { color: #ffcb6b; }
+  .cursor {
+    display: inline-block; width: 7px; height: 13px; background: #e8e2d8;
+    margin-left: 1px; vertical-align: -2px;
+  }
+</style>
+</head>
+<body>
+  <div class="termie" id="frame">
+    <div class="window-chrome">
+      <div class="traffic"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="title">pepperoni-motion</div>
+      <div class="toolbar">
+        <span class="chip">1 needs you · 2 working</span>
+        <span class="plus">+</span>
+      </div>
+    </div>
+    <div class="body">
+      <aside class="sidebar">
+        <div class="search">Filter sessions</div>
+        <div class="side-row">
+          <span class="dot working"></span>
+          <div class="meta">
+            <span class="name">dough-source</span>
+            <span class="path">~/slice-co/supply</span>
+          </div>
+        </div>
+        <div class="side-row">
+          <span class="dot working"></span>
+          <div class="meta">
+            <span class="name">slice-app</span>
+            <span class="path">~/slice-co/app</span>
+          </div>
+        </div>
+        <div class="side-row active">
+          <span class="dot idle"></span>
+          <div class="meta">
+            <span class="name">pepperoni-motion</span>
+            <span class="path">~/slice-co/motion</span>
+          </div>
+        </div>
+        <div class="side-row">
+          <span class="dot needs"></span>
+          <div class="meta">
+            <span class="name">cod · checkout</span>
+            <span class="path">~/slice-co/web</span>
+          </div>
+        </div>
+      </aside>
+      <div class="grid-wrap">
+        <div class="grid">
+          <div class="tile">
+            <div class="tile-head">
+              <div class="status working"><span class="mark"></span>Working</div>
+              <div class="tile-title">dough-source</div>
+              <div class="tile-actions">−  ✕</div>
+            </div>
+            <div class="term"><span class="dim">~/slice-co/supply</span>
+<span class="prompt">❯</span> ./hunt-flour --region pnw --protein 12.5
+
+<span class="cyan">mill scrape</span>  → Caputo 00 · Seattle warehouse
+<span class="ok">✓</span> protein 12.6% · ash 0.55 · 50lb @ $41.20
+<span class="cyan">mill scrape</span>  → Cairnspring Mills · Burlington
+<span class="ok">✓</span> protein 12.4% · ash 0.50 · 50lb @ $38.90
+<span class="cyan">freight</span>       quoting LTL for 12 sacks…
+
+<span class="warn">…comparing hydration curves for Neapolitan crust</span>
+<span class="dim">writing</span> <span class="hl">suppliers.json</span>  <span class="cursor"></span></div>
+          </div>
+          <div class="tile">
+            <div class="tile-head">
+              <div class="status working"><span class="mark"></span>Working</div>
+              <div class="tile-title">slice-app</div>
+              <div class="tile-actions">−  ✕</div>
+            </div>
+            <div class="term"><span class="dim">feat/menu-v2 · bun run ios</span>
+
+<span class="blue">› bundling</span> slice-co menu refresh
+<span class="ok">✔</span> Metro waiting on http://localhost:8081
+<span class="dim">LOG</span>  MenuSheet mounted · 14 pies
+<span class="dim">LOG</span>  Prefetching pepperoni hero @2x
+<span class="warn">WARN</span> Shadow on Android needs elevation
+
+<span class="prompt">❯</span> git status -sb
+<span class="ok">##</span> feat/menu-v2...origin/feat/menu-v2
+<span class="pink"> M</span> src/screens/Menu.tsx
+<span class="pink"> M</span> src/components/PieCard.tsx
+<span class="ok">??</span> src/assets/pepperoni-spin.json
+<span class="cursor"></span></div>
+          </div>
+          <div class="tile focused">
+            <div class="tile-head">
+              <div class="status idle"><span class="mark"></span>Idle</div>
+              <div class="tile-title">pepperoni-motion</div>
+              <div class="tile-actions">−  ✕</div>
+            </div>
+            <div class="term"><span class="dim">~/slice-co/motion · lottie sketch</span>
+<span class="prompt">❯</span> python sketch_pep.py --frames 48 --spin 1.25
+
+<span class="cyan">frame</span> 00  disc  ·  grease sheen
+<span class="cyan">frame</span> 12  tilt+  ·  curl edge
+<span class="cyan">frame</span> 24  flip   ·  seed speckles
+<span class="cyan">frame</span> 36  settle ·  cheese stretch
+<span class="ok">wrote</span> out/pepperoni-spin.json  (18 KB)
+
+<span class="prompt">❯</span> open out/preview.html
+<span class="dim"># pepperoni does a smug little orbit</span>
+<span class="prompt">❯</span> <span class="cursor"></span></div>
+          </div>
+          <div class="tile needs-you">
+            <div class="tile-head">
+              <div class="status needs"><span class="mark"></span>Needs approval</div>
+              <div class="tile-title">cod · checkout</div>
+              <div class="tile-actions">−  ✕</div>
+            </div>
+            <div class="term"><span class="fish"> Cod Code </span><span class="dim">v0.9 · reef mode · fish@slice-co</span>
+
+<span class="dim">╭─</span> checkout flow for pickup orders
+<span class="dim">│</span>  Add tip presets + oven ETA chip
+<span class="dim">╰─</span>
+
+<span class="ok">●</span> Read <span class="hl">CheckoutSheet.tsx</span>
+<span class="ok">●</span> Edit <span class="hl">TipRow.tsx</span>  <span class="dim">(+42 −6)</span>
+<span class="warn">◐</span> Run tests for cart totals
+
+<span class="pink">Cod wants to run:</span>
+  <span class="hl">bun test packages/cart</span>
+
+<span class="warn">⚠ waiting for your go-ahead</span>  <span class="dim">(y/n)</span>
+<span class="fish">fish&gt;</span> <span class="cursor"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

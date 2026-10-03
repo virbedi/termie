@@ -1,0 +1,69 @@
+import SwiftUI
+
+struct TermieCommands: Commands {
+    var store: SessionStore
+
+    var body: some Commands {
+        CommandMenu("Terminal") {
+            Button("New Terminal") {
+                store.addSession()
+            }
+            .keyboardShortcut("t", modifiers: .command)
+
+            Button("Rename Terminal") {
+                store.beginRenamingFocused()
+            }
+
+            Button("Close Terminal") {
+                store.closeFocused()
+            }
+            .keyboardShortcut("w", modifiers: .command)
+
+            Button("Minimize Terminal") {
+                if let id = store.focusedID {
+                    store.minimize(id)
+                }
+            }
+            .keyboardShortcut("m", modifiers: [.command, .shift])
+            .disabled(store.focusedID == nil)
+
+            Button("Restart Terminal") {
+                if let session = store.focusedSession {
+                    store.restart(session)
+                }
+            }
+            .keyboardShortcut("r", modifiers: [.command, .shift])
+
+            Divider()
+
+            Button("Focus Next") {
+                focusOffset(1)
+            }
+            .keyboardShortcut("]", modifiers: .command)
+
+            Button("Focus Previous") {
+                focusOffset(-1)
+            }
+            .keyboardShortcut("[", modifiers: .command)
+
+            Divider()
+
+            let jumpSessions = Array(store.visibleSessions.prefix(9))
+            ForEach(Array(jumpSessions.enumerated()), id: \.element.id) { index, session in
+                Button("Focus \(session.displayName)") {
+                    store.focus(session.id)
+                }
+                .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
+            }
+        }
+    }
+
+    private func focusOffset(_ delta: Int) {
+        let sessions = store.visibleSessions
+        guard !sessions.isEmpty else { return }
+        let current = sessions.firstIndex { $0.id == store.focusedID } ?? 0
+        let count = sessions.count
+        let next = (current + delta + count) % count
+        store.focus(sessions[next].id)
+    }
+}
