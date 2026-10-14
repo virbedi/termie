@@ -7,4 +7,4 @@ swift test --package-path Packages/TermieCore
 xcodebuild -project Termie.xcodeproj -scheme Termie -destination 'platform=macOS' -derivedDataPath build -skipPackagePluginValidation build
 ```
 
-Keep the app unsandboxed. New behavior for titles, canvas layout, shell themes, or “needs you” belongs in `Packages/TermieCore` with a test.
+Keep the app unsandboxed. New behavior for titles, canvas layout, tile resize, shell themes, or “needs you” belongs in `Packages/TermieCore` with a test.
