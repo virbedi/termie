@@ -6,7 +6,7 @@ struct CanvasGridView: View {
     @Environment(SessionStore.self) private var store
     @State private var frames: [UnitRect] = []
     @State private var userSized = false
-    @State private var drag: DividerDrag?
+    @State private var cornerDrag: CornerDrag?
     @State private var draggingID: UUID?
     @State private var dropTargetID: UUID?
 
@@ -33,10 +33,10 @@ struct CanvasGridView: View {
         } else {
             GeometryReader { proxy in
                 let display = resolvedFrames()
-                let dividers = tileDividers(in: display)
                 ZStack(alignment: .topLeading) {
                     ForEach(Array(store.visibleSessions.enumerated()), id: \.element.id) { index, session in
-                        let rect = tileRect(display[index], in: proxy.size)
+                        let unit = display[index]
+                        let rect = tileRect(unit, in: proxy.size)
                         SessionTile(
                             session: session,
                             isDropTarget: dropTargetID == session.id,
@@ -62,21 +62,28 @@ struct CanvasGridView: View {
                         } isTargeted: { targeted in
                             dropTargetID = targeted ? session.id : nil
                         }
-                    }
-                    ForEach(Array(dividers.enumerated()), id: \.offset) { index, divider in
-                        DividerHandle(
-                            divider: divider,
-                            size: proxy.size,
-                            isDragging: drag?.index == index,
-                            onDrag: { translation in
-                                resize(divider, index: index, translation: translation, in: proxy.size)
-                            },
-                            onDragEnd: {
-                                drag = nil
-                            }
-                        )
+
+                        ForEach(TileCorner.allCases, id: \.self) { corner in
+                            CornerHandle(
+                                corner: corner,
+                                anchor: cornerPoint(unit, corner: corner, in: proxy.size),
+                                isDragging: cornerDrag?.tileIndex == index && cornerDrag?.corner == corner,
+                                onDrag: { location in
+                                    resizeCorner(
+                                        of: index,
+                                        corner: corner,
+                                        location: location,
+                                        in: proxy.size
+                                    )
+                                },
+                                onDragEnd: {
+                                    cornerDrag = nil
+                                }
+                            )
+                        }
                     }
                 }
+                .coordinateSpace(name: "canvas")
                 .frame(width: proxy.size.width, height: proxy.size.height)
                 .animation(.snappy(duration: 0.22), value: store.layoutEpoch)
                 .animation(.snappy(duration: 0.22), value: sessionIdentity)
@@ -86,12 +93,12 @@ struct CanvasGridView: View {
                 // New set or order: fall back to the equal canvas until the user resizes again.
                 userSized = false
                 frames = []
-                drag = nil
+                cornerDrag = nil
             }
             .onChange(of: store.layoutEpoch) { _, _ in
                 userSized = false
                 frames = []
-                drag = nil
+                cornerDrag = nil
             }
         }
     }
@@ -100,7 +107,7 @@ struct CanvasGridView: View {
         store.visibleSessions.map(\.id)
     }
 
-    /// Tiles are inset so the seam between them is an empty gutter the divider can sit in.
+    /// Tiles are inset so adjacent shells keep a gutter the corner handles can sit in.
     private func tileRect(_ unit: UnitRect, in size: CGSize) -> CGRect {
         CGRect(
             x: unit.x * size.width + 4,
@@ -110,6 +117,19 @@ struct CanvasGridView: View {
         )
     }
 
+    private func cornerPoint(_ unit: UnitRect, corner: TileCorner, in size: CGSize) -> CGPoint {
+        switch corner {
+        case .topLeft:
+            return CGPoint(x: unit.minX * size.width, y: unit.minY * size.height)
+        case .topRight:
+            return CGPoint(x: unit.maxX * size.width, y: unit.minY * size.height)
+        case .bottomLeft:
+            return CGPoint(x: unit.minX * size.width, y: unit.maxY * size.height)
+        case .bottomRight:
+            return CGPoint(x: unit.maxX * size.width, y: unit.maxY * size.height)
+        }
+    }
+
     private func resolvedFrames() -> [UnitRect] {
         if userSized, frames.count == store.visibleSessions.count {
             return frames
@@ -117,22 +137,35 @@ struct CanvasGridView: View {
         return equalGridFrames(count: store.visibleSessions.count)
     }
 
-    private func resize(_ divider: TileDivider, index: Int, translation: CGSize, in size: CGSize) {
+    private func resizeCorner(
+        of index: Int,
+        corner: TileCorner,
+        location: CGPoint,
+        in size: CGSize
+    ) {
         let base: [UnitRect]
-        let origin: TileDivider
-        if let drag, drag.index == index {
-            base = drag.frames
-            origin = drag.divider
+        if let cornerDrag,
+           cornerDrag.tileIndex == index,
+           cornerDrag.corner == corner {
+            base = cornerDrag.frames
         } else {
             base = resolvedFrames()
-            origin = divider
-            drag = DividerDrag(index: index, frames: base, divider: origin)
+            cornerDrag = CornerDrag(tileIndex: index, corner: corner, frames: base)
         }
-        let delta = origin.axis == .vertical
-            ? translation.width / size.width
-            : translation.height / size.height
-        let minimum = minimumSpan(along: origin.axis, in: size)
-        frames = resizeTiles(base, divider: origin, to: origin.position + delta, minimum: minimum)
+        let unitX = min(max(location.x / max(size.width, 1), 0), 1)
+        let unitY = min(max(location.y / max(size.height, 1), 0), 1)
+        let minimum = min(
+            minimumSpan(along: .vertical, in: size),
+            minimumSpan(along: .horizontal, in: size)
+        )
+        frames = resizeTileCorner(
+            base,
+            at: index,
+            corner: corner,
+            toX: unitX,
+            toY: unitY,
+            minimum: minimum
+        )
         userSized = true
     }
 
@@ -143,96 +176,54 @@ struct CanvasGridView: View {
     }
 }
 
-private struct DividerDrag {
-    var index: Int
+private struct CornerDrag {
+    var tileIndex: Int
+    var corner: TileCorner
     var frames: [UnitRect]
-    var divider: TileDivider
 }
 
-private struct DividerHandle: View {
-    var divider: TileDivider
-    var size: CGSize
+private struct CornerHandle: View {
+    var corner: TileCorner
+    var anchor: CGPoint
     var isDragging: Bool
-    var onDrag: (CGSize) -> Void
+    var onDrag: (CGPoint) -> Void
     var onDragEnd: () -> Void
 
     @State private var hovering = false
     @State private var cursorPushed = false
 
-    private let hitThickness: CGFloat = 14
+    private let hitSize: CGFloat = 14
+    private let knobSize: CGFloat = 8
 
     var body: some View {
-        ZStack {
-            Capsule()
-                .fill(Color.secondary.opacity(hovering || isDragging ? 0.55 : 0.28))
-                .frame(width: gripWidth, height: gripHeight)
-        }
-        .frame(width: hitWidth, height: hitHeight)
-        .contentShape(Rectangle())
-        .onHover { hovering = $0 }
-        .onChange(of: hovering || isDragging) { _, active in
-            setCursor(active)
-        }
-        .onDisappear {
-            setCursor(false)
-        }
-        .highPriorityGesture(
-            DragGesture(minimumDistance: 1, coordinateSpace: .global)
-                .onChanged { onDrag($0.translation) }
-                .onEnded { _ in onDragEnd() }
-        )
-        .position(x: centerX, y: centerY)
+        Circle()
+            .fill(Color.secondary.opacity(hovering || isDragging ? 0.85 : 0.45))
+            .frame(width: knobSize, height: knobSize)
+            .frame(width: hitSize, height: hitSize)
+            .contentShape(Rectangle())
+            .onHover { hovering = $0 }
+            .onChange(of: hovering || isDragging) { _, active in
+                setCursor(active)
+            }
+            .onDisappear {
+                setCursor(false)
+            }
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 1, coordinateSpace: .named("canvas"))
+                    .onChanged { onDrag($0.location) }
+                    .onEnded { _ in onDragEnd() }
+            )
+            .position(x: anchor.x, y: anchor.y)
+            .help("Drag corner to resize")
     }
 
     private func setCursor(_ active: Bool) {
         if active, !cursorPushed {
-            cursor.push()
+            NSCursor.crosshair.push()
             cursorPushed = true
         } else if !active, cursorPushed {
             NSCursor.pop()
             cursorPushed = false
-        }
-    }
-
-    private var cursor: NSCursor {
-        divider.axis == .vertical ? .resizeLeftRight : .resizeUpDown
-    }
-
-    private var hitWidth: CGFloat {
-        divider.axis == .vertical ? hitThickness : max(hitThickness, spanLength)
-    }
-
-    private var hitHeight: CGFloat {
-        divider.axis == .vertical ? max(hitThickness, spanLength) : hitThickness
-    }
-
-    private var gripWidth: CGFloat {
-        divider.axis == .vertical ? 3 : min(36, spanLength * 0.18)
-    }
-
-    private var gripHeight: CGFloat {
-        divider.axis == .vertical ? min(36, spanLength * 0.18) : 3
-    }
-
-    private var spanLength: CGFloat {
-        max(0, (divider.end - divider.start) * (divider.axis == .vertical ? size.height : size.width))
-    }
-
-    private var centerX: CGFloat {
-        switch divider.axis {
-        case .vertical:
-            return divider.position * size.width
-        case .horizontal:
-            return (divider.start + divider.end) / 2 * size.width
-        }
-    }
-
-    private var centerY: CGFloat {
-        switch divider.axis {
-        case .vertical:
-            return (divider.start + divider.end) / 2 * size.height
-        case .horizontal:
-            return divider.position * size.height
         }
     }
 }
