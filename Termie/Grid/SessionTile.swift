@@ -211,12 +211,18 @@ struct SessionTile: View {
     }
 
     private var stroke: Color {
-        if isDropTarget { return Color.accentColor.opacity(0.9) }
+        if isDropTarget {
+            return Color.accentColor.opacity(0.9)
+        }
         switch session.presence {
-        case .needsYou: .orange
-        case .exited: .red.opacity(0.8)
-        case .working where isFocused: .accentColor
-        default: isFocused ? Color.accentColor.opacity(0.85) : Color.primary.opacity(0.12)
+        case .needsYou:
+            return .orange
+        case .exited:
+            return .red.opacity(0.8)
+        case .working where isFocused:
+            return .accentColor
+        default:
+            return isFocused ? Color.accentColor.opacity(0.85) : Color.primary.opacity(0.12)
         }
     }
 
