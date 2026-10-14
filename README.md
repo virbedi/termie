@@ -39,7 +39,7 @@ open build/Build/Products/Debug/Termie.app
 | **⌘]** / **⌘[** | Next / previous |
 | **⌘1–9** | Jump to a tile |
 
-Drag the grip in a tile header to rearrange shells on the canvas; the others reflow around the drop. Drag the seam between tiles to resize. **⌘⇧G** snaps back to a nearly equal grid. Each shell can be dark or light on its own. The menu bar icon lists every session.
+Drag the grip in a tile header to rearrange shells on the canvas; the others reflow around the drop. Drag a tile corner to resize; neighbors on that shared seam move with it. **⌘⇧G** snaps back to a nearly equal grid. Each shell can be dark or light on its own. The menu bar icon lists every session.
 
 ## Claude Code
 
