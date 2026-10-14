@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Native macOS app for side-by-side login shells—named tiles, attention when a session needs you, and the shell you already use.
+  Native macOS app for side-by-side terminal shells.
 </p>
 
 <p align="center">
