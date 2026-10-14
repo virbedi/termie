@@ -1,5 +1,6 @@
 import AppKit
 import SwiftTerm
+import TermieCore
 
 /// Owns a bell callback that can be fired from SwiftTerm's nonisolated bell hook.
 final class BellRelay: @unchecked Sendable {
@@ -58,6 +59,8 @@ final class TermieTerminalView: LocalProcessTerminalView {
     var onUsableSize: (() -> Void)?
     /// While parked off the grid, ignore the zero frame SwiftUI applies as the tile is removed.
     var suppressTinyFrames = false
+    /// Last theme pushed from SwiftUI so updates can skip a full palette reinstall.
+    var appliedTheme: ShellTheme?
     private let bellRelay = BellRelay()
 
     init(font: NSFont) {

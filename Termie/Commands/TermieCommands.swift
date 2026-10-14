@@ -34,6 +34,21 @@ struct TermieCommands: Commands {
             }
             .keyboardShortcut("r", modifiers: [.command, .shift])
 
+            Button(themeToggleTitle) {
+                store.toggleFocusedTheme()
+            }
+            .keyboardShortcut("d", modifiers: [.command, .shift])
+            .disabled(store.focusedID == nil)
+
+            Divider()
+
+            Button("Equalize Grid") {
+                withAnimation(.snappy(duration: 0.28)) {
+                    store.equalizeLayout()
+                }
+            }
+            .keyboardShortcut("g", modifiers: [.command, .shift])
+
             Divider()
 
             Button("Focus Next") {
@@ -56,6 +71,13 @@ struct TermieCommands: Commands {
                 .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
             }
         }
+    }
+
+    private var themeToggleTitle: String {
+        guard let theme = store.focusedSession?.theme else {
+            return "Toggle Shell Theme"
+        }
+        return "Use \(theme.oppositeTitle) Theme"
     }
 
     private func focusOffset(_ delta: Int) {

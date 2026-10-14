@@ -7,10 +7,20 @@ struct MainView: View {
         NavigationSplitView {
             SessionSidebar()
         } detail: {
-            BentoGridView()
+            CanvasGridView()
                 .navigationTitle(store.focusedSession?.displayName ?? "Termie")
                 .navigationSubtitle(store.summary)
                 .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            withAnimation(.snappy(duration: 0.28)) {
+                                store.equalizeLayout()
+                            }
+                        } label: {
+                            Label("Equalize Grid", systemImage: "square.grid.2x2")
+                        }
+                        .help("Equalize Grid")
+                    }
                     ToolbarItem(placement: .primaryAction) {
                         Button {
                             store.addSession()

@@ -1,8 +1,11 @@
 import SwiftUI
+import TermieCore
 
 struct SessionTile: View {
     @Environment(SessionStore.self) private var store
     var session: TerminalSession
+    var isDropTarget = false
+    @Binding var draggingID: UUID?
 
     @State private var editing = false
     @State private var draft = ""
@@ -20,9 +23,10 @@ struct SessionTile: View {
         .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(stroke, lineWidth: isFocused || needsYou ? 2 : 1)
+                .strokeBorder(stroke, lineWidth: isFocused || needsYou || isDropTarget ? 2 : 1)
         }
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .preferredColorScheme(session.theme == .dark ? .dark : .light)
         .contextMenu {
             Button("Rename") {
                 store.beginRenaming(session.id)
@@ -31,6 +35,9 @@ struct SessionTile: View {
                 session.followTitle()
             }
             .disabled(session.followsTitle)
+            Button("Use \(session.theme.oppositeTitle) Theme") {
+                store.toggleTheme(session.id)
+            }
             if case .exited = session.presence {
                 Button("Restart") {
                     store.restart(session)
@@ -48,6 +55,7 @@ struct SessionTile: View {
 
     private var header: some View {
         HStack(spacing: 8) {
+            dragHandle
             statusMark
                 .contentShape(Rectangle())
                 .onTapGesture { store.focus(session.id) }
@@ -55,6 +63,15 @@ struct SessionTile: View {
             Spacer(minLength: 4)
                 .contentShape(Rectangle())
                 .onTapGesture { store.focus(session.id) }
+            Button {
+                store.toggleTheme(session.id)
+            } label: {
+                Image(systemName: session.theme == .dark ? "sun.max" : "moon")
+                    .font(.caption.weight(.semibold))
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.secondary)
+            .help("Use \(session.theme.oppositeTitle.lowercased()) theme")
             if case .exited = session.presence {
                 Button("Restart") {
                     store.restart(session)
@@ -90,6 +107,28 @@ struct SessionTile: View {
             editing = true
             store.renamingSessionID = nil
         }
+    }
+
+    private var dragHandle: some View {
+        Image(systemName: "line.3.horizontal")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .frame(width: 18, height: 18)
+            .contentShape(Rectangle())
+            .help("Drag to rearrange")
+            .draggable(session.id.uuidString) {
+                Text(session.displayName)
+                    .font(.callout.weight(.medium))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(.bar, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .onAppear { draggingID = session.id }
+                    .onDisappear {
+                        if draggingID == session.id {
+                            draggingID = nil
+                        }
+                    }
+            }
     }
 
     @ViewBuilder
@@ -172,6 +211,7 @@ struct SessionTile: View {
     }
 
     private var stroke: Color {
+        if isDropTarget { return Color.accentColor.opacity(0.9) }
         switch session.presence {
         case .needsYou: .orange
         case .exited: .red.opacity(0.8)

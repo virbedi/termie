@@ -12,7 +12,7 @@
 		BB0000000000000000000003 /* AttributionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000003 /* AttributionsView.swift */; };
 		BB0000000000000000000004 /* TermieCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000004 /* TermieCommands.swift */; };
 		BB0000000000000000000005 /* AlwaysOnTop.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000005 /* AlwaysOnTop.swift */; };
-		BB0000000000000000000006 /* BentoGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000006 /* BentoGridView.swift */; };
+		BB0000000000000000000006 /* CanvasGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000006 /* CanvasGridView.swift */; };
 		BB0000000000000000000007 /* SessionTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000007 /* SessionTile.swift */; };
 		BB0000000000000000000008 /* MainScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000008 /* MainScene.swift */; };
 		BB0000000000000000000009 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000009 /* MainView.swift */; };
@@ -44,7 +44,7 @@
 		AA0000000000000000000003 /* AttributionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "About Window/Attributions Window/AttributionsView.swift"; sourceTree = "<group>"; };
 		AA0000000000000000000004 /* TermieCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands/TermieCommands.swift; sourceTree = "<group>"; };
 		AA0000000000000000000005 /* AlwaysOnTop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Custom Views/AlwaysOnTop.swift"; sourceTree = "<group>"; };
-		AA0000000000000000000006 /* BentoGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grid/BentoGridView.swift; sourceTree = "<group>"; };
+		AA0000000000000000000006 /* CanvasGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grid/CanvasGridView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000007 /* SessionTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Grid/SessionTile.swift; sourceTree = "<group>"; };
 		AA0000000000000000000008 /* MainScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainScene.swift; sourceTree = "<group>"; };
 		AA0000000000000000000009 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
@@ -113,7 +113,7 @@
 				AA0000000000000000000003 /* AttributionsView.swift */,
 				AA0000000000000000000004 /* TermieCommands.swift */,
 				AA0000000000000000000005 /* AlwaysOnTop.swift */,
-				AA0000000000000000000006 /* BentoGridView.swift */,
+				AA0000000000000000000006 /* CanvasGridView.swift */,
 				AA0000000000000000000007 /* SessionTile.swift */,
 				AA0000000000000000000008 /* MainScene.swift */,
 				AA0000000000000000000009 /* MainView.swift */,
@@ -222,7 +222,7 @@
 				BB0000000000000000000003 /* AttributionsView.swift in Sources */,
 				BB0000000000000000000004 /* TermieCommands.swift in Sources */,
 				BB0000000000000000000005 /* AlwaysOnTop.swift in Sources */,
-				BB0000000000000000000006 /* BentoGridView.swift in Sources */,
+				BB0000000000000000000006 /* CanvasGridView.swift in Sources */,
 				BB0000000000000000000007 /* SessionTile.swift in Sources */,
 				BB0000000000000000000008 /* MainScene.swift in Sources */,
 				BB0000000000000000000009 /* MainView.swift in Sources */,

@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import TermieCore
 import UserNotifications
 
 @MainActor
@@ -7,6 +8,8 @@ import UserNotifications
 final class SessionStore {
     private(set) var sessions: [TerminalSession] = []
     private(set) var minimizedIDs: Set<UUID> = []
+    /// Bumped when the canvas should snap back to the equal grid.
+    private(set) var layoutEpoch = 0
     var focusedID: UUID?
     var renamingSessionID: UUID?
     private var nextOrdinal = 1
@@ -149,6 +152,36 @@ final class SessionStore {
     func beginRenamingFocused() {
         guard let focusedID else { return }
         beginRenaming(focusedID)
+    }
+
+    /// Drag-reorder on the canvas. Minimized sessions stay parked in place.
+    func moveVisible(_ id: UUID, before destinationID: UUID?) {
+        let ids = sessions.map(\.id)
+        let next = reorderPreservingHidden(
+            all: ids,
+            hidden: minimizedIDs,
+            moving: id,
+            before: destinationID
+        )
+        guard next != ids else { return }
+        let byID = Dictionary(uniqueKeysWithValues: sessions.map { ($0.id, $0) })
+        sessions = next.compactMap { byID[$0] }
+    }
+
+    /// Snap every visible tile back onto the predetermined equal grid.
+    /// Reorders nothing; bumps `layoutEpoch` so the canvas animates into place.
+    func equalizeLayout() {
+        layoutEpoch += 1
+    }
+
+    func toggleTheme(_ id: UUID) {
+        guard let session = sessions.first(where: { $0.id == id }) else { return }
+        session.theme.toggle()
+    }
+
+    func toggleFocusedTheme() {
+        guard let focusedID else { return }
+        toggleTheme(focusedID)
     }
 
     func close(_ id: UUID) {
