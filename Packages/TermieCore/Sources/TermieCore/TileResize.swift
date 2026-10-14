@@ -1,12 +1,5 @@
 import Foundation
 
-extension UnitRect {
-    public var minX: Double { x }
-    public var minY: Double { y }
-    public var maxX: Double { x + width }
-    public var maxY: Double { y + height }
-}
-
 public struct TileDivider: Equatable, Sendable {
     public enum Axis: Equatable, Sendable {
         case horizontal
@@ -56,6 +49,75 @@ public func tileDividers(in frames: [UnitRect]) -> [TileDivider] {
 
     return merge(vertical, axis: .vertical, tolerance: tolerance)
         + merge(horizontal, axis: .horizontal, tolerance: tolerance)
+}
+
+public enum TileCorner: String, CaseIterable, Equatable, Hashable, Sendable {
+    case topLeft
+    case topRight
+    case bottomLeft
+    case bottomRight
+}
+
+/// Drags one corner of `frames[index]` to `(x, y)` in unit space.
+/// Uses the full shared seams that meet at that corner so every neighbor on
+/// those lines moves and the canvas stays gapless.
+public func resizeTileCorner(
+    _ frames: [UnitRect],
+    at index: Int,
+    corner: TileCorner,
+    toX x: Double,
+    toY y: Double,
+    minimum: Double = 0.12
+) -> [UnitRect] {
+    guard frames.indices.contains(index) else { return frames }
+    let tolerance = 0.004
+    let tile = frames[index]
+    let verticalEdge: Double
+    let horizontalEdge: Double
+    switch corner {
+    case .topLeft:
+        verticalEdge = tile.minX
+        horizontalEdge = tile.minY
+    case .topRight:
+        verticalEdge = tile.maxX
+        horizontalEdge = tile.minY
+    case .bottomLeft:
+        verticalEdge = tile.minX
+        horizontalEdge = tile.maxY
+    case .bottomRight:
+        verticalEdge = tile.maxX
+        horizontalEdge = tile.maxY
+    }
+
+    let dividers = tileDividers(in: frames)
+    let vertical = dividers.first { divider in
+        divider.axis == .vertical
+            && abs(divider.position - verticalEdge) <= tolerance
+            && tile.shares(divider, tolerance: tolerance)
+    }
+    let horizontal = dividers.first { divider in
+        divider.axis == .horizontal
+            && abs(divider.position - horizontalEdge) <= tolerance
+            && tile.shares(divider, tolerance: tolerance)
+    }
+
+    var next = frames
+    if let vertical {
+        next = resizeTiles(next, divider: vertical, to: x, minimum: minimum)
+    }
+    if let horizontal {
+        // Re-resolve the horizontal seam after the vertical move so its span
+        // still matches the shifted tiles.
+        let refreshed = tileDividers(in: next)
+        let moved = next[index]
+        let nextHorizontal = refreshed.first { divider in
+            divider.axis == .horizontal
+                && abs(divider.position - horizontalEdge) <= tolerance
+                && moved.shares(divider, tolerance: tolerance)
+        } ?? horizontal
+        next = resizeTiles(next, divider: nextHorizontal, to: y, minimum: minimum)
+    }
+    return next
 }
 
 /// Moves every tile edge that lies on `divider` to `position`.
@@ -145,7 +207,7 @@ private func merge(_ seams: [Seam], axis: TileDivider.Axis, tolerance: Double) -
 }
 
 extension UnitRect {
-    fileprivate func shares(_ divider: TileDivider, tolerance: Double) -> Bool {
+    public func shares(_ divider: TileDivider, tolerance: Double = 0.004) -> Bool {
         switch divider.axis {
         case .vertical:
             let onSeam = abs(maxX - divider.position) <= tolerance || abs(minX - divider.position) <= tolerance

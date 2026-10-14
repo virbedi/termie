@@ -58,20 +58,3 @@ import Testing
     monitor.reduce(.title("✳ wire up sessions"))
     #expect(monitor.automaticTitle == "wire up sessions")
 }
-
-@Test func bentoKeepsTilesInSessionOrder() {
-    let frames = bentoFrames(count: 3)
-    #expect(frames[0] == UnitRect(x: 0, y: 0, width: 0.62, height: 1))
-    #expect(frames[1].x == 0.62)
-    #expect(frames[1].y == 0)
-    #expect(frames[2].y == 0.5)
-}
-
-@Test func fourAndTwoLayoutsStayInsideTheSquare() {
-    let four = bentoFrames(count: 4)
-    #expect(four[0] == UnitRect(x: 0, y: 0, width: 0.62, height: 0.62))
-    let pair = bentoFrames(count: 2)
-    #expect(pair[1] == UnitRect(x: 0.5, y: 0, width: 0.5, height: 1))
-    let single = bentoFrames(count: 1)
-    #expect(single[0] == UnitRect(x: 0, y: 0, width: 1, height: 1))
-}

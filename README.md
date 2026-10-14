@@ -34,10 +34,12 @@ open build/Build/Products/Debug/Termie.app
 | **⌘T** | New terminal |
 | **⌘W** | Close focused terminal |
 | **⌘⇧M** | Minimize focused terminal |
+| **⌘⇧G** | Equalize grid |
+| **⌘⇧D** | Toggle focused shell theme |
 | **⌘]** / **⌘[** | Next / previous |
 | **⌘1–9** | Jump to a tile |
 
-Drag the grip between tiles to resize. The menu bar icon lists every session.
+Drag the grip in a tile header to rearrange shells on the canvas; the others reflow around the drop. Drag a tile corner to resize; neighbors on that shared seam move with it. **⌘⇧G** snaps back to a nearly equal grid. Each shell can be dark or light on its own. The menu bar icon lists every session.
 
 ## Claude Code
 

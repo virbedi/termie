@@ -18,6 +18,8 @@ final class TerminalSession: Identifiable {
     private(set) var automaticTitle: String?
     private(set) var directory: String?
     var pinnedName: String?
+    /// Per-tile shell chrome and SwiftTerm colors. Independent of other tiles.
+    var theme: ShellTheme = .dark
     /// Last grid size, so a minimized shell keeps its rows and columns.
     var parkedSize = CGSize(width: 640, height: 400)
 
@@ -95,6 +97,7 @@ final class TerminalSession: Identifiable {
         wire(view)
         terminalView = view
         viewGeneration += 1
+        // Theme is reapplied by TerminalHost after the new view is hosted.
     }
 
     func startIfNeeded() {
