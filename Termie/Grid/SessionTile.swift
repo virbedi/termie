@@ -1,11 +1,19 @@
+import AppKit
 import SwiftUI
+import TermieCore
 
 struct SessionTile: View {
     @Environment(SessionStore.self) private var store
     var session: TerminalSession
+    var isDropTarget = false
+    var isDragging = false
+    var onWindowDrag: (CGSize, CGPoint) -> Void
+    var onWindowDrop: (CGPoint) -> Void
 
     @State private var editing = false
     @State private var draft = ""
+    @State private var headerHovering = false
+    @State private var headerCursorPushed = false
     @FocusState private var nameFocused: Bool
 
     private var isFocused: Bool { store.focusedID == session.id }
@@ -17,12 +25,13 @@ struct SessionTile: View {
                 .id(session.viewGeneration)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(tileFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(stroke, lineWidth: isFocused || needsYou ? 2 : 1)
+                .strokeBorder(stroke, lineWidth: isFocused || isDropTarget || hasExited ? 2 : 1)
         }
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .shadow(color: .black.opacity(isDragging ? 0.28 : 0.14), radius: isDragging ? 18 : 7, y: isDragging ? 8 : 2)
         .contextMenu {
             Button("Rename") {
                 store.beginRenaming(session.id)
@@ -31,6 +40,9 @@ struct SessionTile: View {
                 session.followTitle()
             }
             .disabled(session.followsTitle)
+            Button("Use \(session.theme.nextTitle) Color") {
+                store.cycleTheme(session.id)
+            }
             if case .exited = session.presence {
                 Button("Restart") {
                     store.restart(session)
@@ -48,13 +60,22 @@ struct SessionTile: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            statusMark
-                .contentShape(Rectangle())
-                .onTapGesture { store.focus(session.id) }
             name
             Spacer(minLength: 4)
                 .contentShape(Rectangle())
                 .onTapGesture { store.focus(session.id) }
+            Button {
+                store.cycleTheme(session.id)
+            } label: {
+                Circle()
+                    .fill(Color(session.theme.swatch))
+                    .overlay {
+                        Circle().strokeBorder(headerInk.opacity(0.35), lineWidth: 1)
+                    }
+                    .frame(width: 12, height: 12)
+            }
+            .buttonStyle(.borderless)
+            .help("Use \(session.theme.nextTitle.lowercased())")
             if case .exited = session.presence {
                 Button("Restart") {
                     store.restart(session)
@@ -81,14 +102,51 @@ struct SessionTile: View {
             .foregroundStyle(.secondary)
             .help("Close terminal")
         }
+        .foregroundStyle(headerInk)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(.bar)
+        .background(headerFill)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            headerHovering = hovering
+            setHeaderCursor(hovering || isDragging)
+        }
+        .onChange(of: isDragging) { _, dragging in
+            setHeaderCursor(dragging || headerHovering)
+        }
+        .onDisappear { setHeaderCursor(false) }
+        .simultaneousGesture(windowDrag)
         .onChange(of: store.renamingSessionID) { _, id in
             guard id == session.id else { return }
             draft = session.displayName
             editing = true
             store.renamingSessionID = nil
+        }
+    }
+
+    private var windowDrag: some Gesture {
+        DragGesture(minimumDistance: 4, coordinateSpace: .named("canvas"))
+            .onChanged { value in
+                guard !editing else { return }
+                onWindowDrag(value.translation, value.location)
+            }
+            .onEnded { value in
+                guard !editing else { return }
+                onWindowDrop(value.location)
+            }
+    }
+
+    private func setHeaderCursor(_ active: Bool) {
+        let cursor = isDragging ? NSCursor.closedHand : NSCursor.openHand
+        if active, !headerCursorPushed {
+            cursor.push()
+            headerCursorPushed = true
+        } else if active, headerCursorPushed {
+            NSCursor.pop()
+            cursor.push()
+        } else if !active, headerCursorPushed {
+            NSCursor.pop()
+            headerCursorPushed = false
         }
     }
 
@@ -125,59 +183,35 @@ struct SessionTile: View {
         }
     }
 
-    private var statusMark: some View {
-        HStack(spacing: 5) {
-            Image(systemName: statusSymbol)
-                .symbolRenderingMode(.palette)
-                .foregroundStyle(statusColor, statusColor.opacity(0.35))
-                .symbolEffect(.pulse, isActive: needsYou)
-            Text(statusText)
-                .font(.caption)
-                .foregroundStyle(statusColor)
-                .lineLimit(1)
-        }
-        .help(statusText)
-    }
-
-    private var needsYou: Bool {
-        if case .needsYou = session.presence { return true }
+    private var hasExited: Bool {
+        if case .exited = session.presence { return true }
         return false
     }
 
-    private var statusSymbol: String {
-        switch session.presence {
-        case .idle: "circle"
-        case .working: "circle.fill"
-        case .needsYou: "exclamationmark.circle.fill"
-        case .exited: "xmark.circle.fill"
-        }
+    private var tileFill: Color {
+        Color(nsColor: TerminalPalette.colors(for: session.theme).background)
     }
 
-    private var statusColor: Color {
-        switch session.presence {
-        case .idle: .secondary
-        case .working: .green
-        case .needsYou: .orange
-        case .exited: .red
-        }
+    private var headerFill: Color {
+        session.theme.prefersLightInterface
+            ? Color(red: 0.93, green: 0.93, blue: 0.92)
+            : Color(session.theme.swatch).opacity(0.55)
     }
 
-    private var statusText: String {
-        switch session.presence {
-        case .idle: "Idle"
-        case .working: "Working"
-        case .needsYou(let reason): reason
-        case .exited(let code): "Exited \(code)"
-        }
+    private var headerInk: Color {
+        session.theme.prefersLightInterface
+            ? Color.black.opacity(0.72)
+            : Color.white.opacity(0.88)
     }
 
     private var stroke: Color {
-        switch session.presence {
-        case .needsYou: .orange
-        case .exited: .red.opacity(0.8)
-        case .working where isFocused: .accentColor
-        default: isFocused ? Color.accentColor.opacity(0.85) : Color.primary.opacity(0.12)
+        if isDropTarget || isFocused {
+            return Color.accentColor.opacity(isDropTarget ? 0.9 : 0.85)
         }
+        if hasExited {
+            return .red.opacity(0.8)
+        }
+        return Color.primary.opacity(0.12)
     }
 
     private func finishEditing() {

@@ -1,8 +1,8 @@
 # Contributing
 
-Open `Termie.xcodeproj` and build the Termie scheme. Before changing sessions, titles, attention, or the terminal host, read `agents/skills/termie/SKILL.md`.
+Open `Termie.xcodeproj` and build the Termie scheme. Before changing sessions, titles, or the terminal host, read `agents/skills/termie/SKILL.md`.
 
-Logic for titles, attention, bento frames, and tile dividers belongs in `Packages/TermieCore`, with a test next to the change.
+Logic for titles, equal canvas frames, session reorder, tile resize, and shell themes belongs in `Packages/TermieCore`, with a test next to the change.
 
 ```sh
 swift test --package-path Packages/TermieCore

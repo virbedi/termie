@@ -14,21 +14,20 @@ final class TerminalSession: Identifiable {
     let id = UUID()
     let fallbackName: String
 
-    private(set) var presence: SessionPresence = .idle
+    private(set) var presence: SessionPresence = .running
     private(set) var automaticTitle: String?
     private(set) var directory: String?
     var pinnedName: String?
+    /// Per-tile shell chrome and SwiftTerm colors. Independent of other tiles.
+    var theme: ShellTheme = .dark
     /// Last grid size, so a minimized shell keeps its rows and columns.
     var parkedSize = CGSize(width: 640, height: 400)
 
-    private var monitor = AttentionMonitor()
     private(set) var terminalView: TermieTerminalView
     private(set) var viewGeneration = 0
     private var didStart = false
     private var preparedLaunch: ShellLaunch?
     private var oscObservation: TerminalOscObservation?
-    private let outputPing = OutputPing()
-    var onNeedsYou: ((String) -> Void)?
 
     var displayName: String {
         if let pinnedName, !pinnedName.isEmpty { return pinnedName }
@@ -58,18 +57,6 @@ final class TerminalSession: Identifiable {
         pinnedName = nil
     }
 
-    func setFocused(_ focused: Bool) {
-        record(.focusChanged(focused))
-    }
-
-    func noteOutput() {
-        record(.output(Date()))
-    }
-
-    func tick(_ date: Date) {
-        record(.tick(date))
-    }
-
     func close() {
         oscObservation?.cancel()
         oscObservation = nil
@@ -86,8 +73,7 @@ final class TerminalSession: Identifiable {
         terminalView.terminate()
         didStart = false
         preparedLaunch = launch
-        monitor = AttentionMonitor()
-        presence = .idle
+        presence = .running
         automaticTitle = nil
         let view = TermieTerminalView(
             font: .monospacedSystemFont(ofSize: fontSize, weight: .regular)
@@ -95,6 +81,7 @@ final class TerminalSession: Identifiable {
         wire(view)
         terminalView = view
         viewGeneration += 1
+        // Theme is reapplied by TerminalHost after the new view is hosted.
     }
 
     func startIfNeeded() {
@@ -112,9 +99,6 @@ final class TerminalSession: Identifiable {
                 self?.ingest(meaning)
             }
         }
-        view.setProcessOutputHandler { [outputPing] in
-            outputPing.ping()
-        }
         view.startProcess(
             executable: launch.executable,
             args: ["-l"],
@@ -125,49 +109,30 @@ final class TerminalSession: Identifiable {
     }
 
     private func wire(_ view: TermieTerminalView) {
-        view.setBellHandler { [weak self] in
-            self?.record(.bell)
-        }
         view.onUsableSize = { [weak self] in
             self?.startIfNeeded()
-        }
-        outputPing.set { [weak self] in
-            self?.noteOutput()
         }
     }
 
     private func ingest(_ meaning: OscMeaning) {
         switch meaning {
         case .title(let title):
-            record(.title(title))
-        case .notification(let message):
-            record(.notification(message))
-        case .progress(let kind):
-            record(.progress(kind))
-        case .shell(let mark):
-            record(.shell(mark))
+            noteTitle(title)
         case .directory(let path):
             directory = path
-        case .none:
+        case .notification, .progress, .shell, .none:
             break
         }
     }
 
-    private func record(_ event: AttentionEvent) {
-        let before = presence
-        monitor.reduce(event)
-        if presence != monitor.presence {
-            presence = monitor.presence
+    private func noteTitle(_ raw: String) {
+        if let title = automaticSessionTitle(from: raw) {
+            automaticTitle = title
         }
-        if automaticTitle != monitor.automaticTitle {
-            automaticTitle = monitor.automaticTitle
-        }
-        if case .needsYou(let reason) = presence {
-            if case .needsYou = before {
-                return
-            }
-            onNeedsYou?(reason)
-        }
+    }
+
+    private func noteExit(_ code: Int32) {
+        presence = .exited(code)
     }
 }
 
@@ -175,7 +140,7 @@ extension TerminalSession: LocalProcessTerminalViewDelegate {
     func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}
 
     func setTerminalTitle(source: LocalProcessTerminalView, title: String) {
-        record(.title(title))
+        noteTitle(title)
     }
 
     func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {
@@ -188,10 +153,10 @@ extension TerminalSession: LocalProcessTerminalViewDelegate {
     }
 
     func processTerminated(source: TerminalView, exitCode: Int32?) {
-        record(.exited(exitCode ?? -1))
+        noteExit(exitCode ?? -1)
     }
 
     func processFailedToStart(source: TerminalView, error: LocalProcessError) {
-        record(.exited(-1))
+        noteExit(-1)
     }
 }
