@@ -1,7 +1,6 @@
 import AppKit
 import Observation
 import TermieCore
-import UserNotifications
 
 @MainActor
 @Observable
@@ -13,7 +12,6 @@ final class SessionStore {
     var focusedID: UUID?
     var renamingSessionID: UUID?
     private var nextOrdinal = 1
-    private var ticker: Timer?
     private var keyMonitor: Any?
 
     var focusedSession: TerminalSession? {
@@ -28,43 +26,18 @@ final class SessionStore {
         sessions.filter { minimizedIDs.contains($0.id) }
     }
 
-    var attentionCount: Int {
-        sessions.reduce(0) { count, session in
-            if case .needsYou = session.presence { return count + 1 }
-            return count
-        }
-    }
-
     var summary: String {
-        let working = sessions.reduce(0) { count, session in
-            if case .working = session.presence { return count + 1 }
-            return count
+        if let focusedSession {
+            return focusedSession.displayName
         }
-        let need = attentionCount
-        switch (need, working) {
-        case (0, 0):
-            return sessions.isEmpty ? "No terminals" : "Quiet"
-        case (0, _):
-            return working == 1 ? "1 working" : "\(working) working"
-        case (_, 0):
-            return need == 1 ? "1 needs you" : "\(need) need you"
-        default:
-            return "\(need) need you · \(working) working"
-        }
+        return sessions.isEmpty ? "No terminals" : "\(sessions.count) terminals"
     }
 
     init() {
+        NSApp.dockTile.badgeLabel = nil
         let session = makeSession()
         sessions = [session]
         focus(session.id)
-        ticker = Timer(timeInterval: 0.4, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.tick()
-            }
-        }
-        if let ticker {
-            RunLoop.main.add(ticker, forMode: .common)
-        }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             guard flags.contains(.command),
@@ -90,10 +63,6 @@ final class SessionStore {
     func focus(_ id: UUID) {
         guard let session = sessions.first(where: { $0.id == id }), !minimizedIDs.contains(id) else { return }
         focusedID = session.id
-        for session in sessions {
-            session.setFocused(session.id == id)
-        }
-        updateDockBadge()
     }
 
     func minimize(_ id: UUID) {
@@ -112,8 +81,6 @@ final class SessionStore {
             focus(next.id)
         } else {
             focusedID = nil
-            session.setFocused(false)
-            updateDockBadge()
         }
     }
 
@@ -154,14 +121,14 @@ final class SessionStore {
         beginRenaming(focusedID)
     }
 
-    /// Drag-reorder on the canvas. Minimized sessions stay parked in place.
-    func moveVisible(_ id: UUID, before destinationID: UUID?) {
+    /// Drop a window onto a visible slot. Minimized sessions stay parked in place.
+    func moveVisible(_ id: UUID, toSlot slot: Int) {
         let ids = sessions.map(\.id)
-        let next = reorderPreservingHidden(
+        let next = reorderOccupyingSlot(
             all: ids,
             hidden: minimizedIDs,
             moving: id,
-            before: destinationID
+            toSlot: slot
         )
         guard next != ids else { return }
         let byID = Dictionary(uniqueKeysWithValues: sessions.map { ($0.id, $0) })
@@ -174,14 +141,14 @@ final class SessionStore {
         layoutEpoch += 1
     }
 
-    func toggleTheme(_ id: UUID) {
+    func cycleTheme(_ id: UUID) {
         guard let session = sessions.first(where: { $0.id == id }) else { return }
-        session.theme.toggle()
+        session.theme.cycle()
     }
 
     func toggleFocusedTheme() {
         guard let focusedID else { return }
-        toggleTheme(focusedID)
+        cycleTheme(focusedID)
     }
 
     func close(_ id: UUID) {
@@ -201,10 +168,7 @@ final class SessionStore {
                 focus(next.id)
             } else {
                 focusedID = nil
-                updateDockBadge()
             }
-        } else {
-            updateDockBadge()
         }
     }
 
@@ -255,58 +219,9 @@ final class SessionStore {
         nextOrdinal += 1
         let stored = UserDefaults.standard.double(forKey: SettingsKey.fontSize)
         let session = TerminalSession(ordinal: ordinal, fontSize: CGFloat(stored.nonZero(or: 13)))
+        session.theme = ShellEnvironment.defaultTheme()
         session.prepare(launchConfiguration())
-        session.onNeedsYou = { [weak self, weak session] reason in
-            guard let self, let session else { return }
-            self.announce(session, reason: reason)
-        }
         return session
-    }
-
-    private func tick() {
-        let now = Date()
-        for session in sessions {
-            session.tick(now)
-        }
-        updateDockBadge()
-    }
-
-    private func announce(_ session: TerminalSession, reason: String) {
-        updateDockBadge()
-        if UserDefaults.standard.bool(forKey: SettingsKey.beepOnAttention) {
-            NSSound.beep()
-        }
-        let looking = NSApp.isActive && session.id == focusedID
-        guard !looking else { return }
-        let title = session.displayName
-        let identifier = session.id.uuidString
-        Task {
-            await Self.postNotification(title: title, body: reason, identifier: identifier)
-        }
-    }
-
-    private static func postNotification(title: String, body: String, identifier: String) async {
-        let center = UNUserNotificationCenter.current()
-        let settings = await center.notificationSettings()
-        switch settings.authorizationStatus {
-        case .notDetermined:
-            let granted = (try? await center.requestAuthorization(options: [.alert, .sound])) ?? false
-            guard granted else { return }
-        case .denied:
-            return
-        default:
-            break
-        }
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: nil)
-        try? await center.add(request)
-    }
-
-    private func updateDockBadge() {
-        let count = attentionCount
-        NSApp.dockTile.badgeLabel = count > 0 ? "\(count)" : nil
     }
 
     private func nearestVisible(to index: Int, excluding id: UUID) -> TerminalSession? {

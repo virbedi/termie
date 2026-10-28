@@ -38,15 +38,10 @@ struct MenuBarMenu: View {
     }
 
     private func label(for session: TerminalSession) -> String {
-        switch session.presence {
-        case .needsYou(let reason):
-            return "\(session.displayName) — \(reason)"
-        case .working:
-            return "\(session.displayName) — Working"
-        case .exited:
-            return "\(session.displayName) — Exited"
-        case .idle:
-            return session.displayName
+        let current = session.id == store.focusedID ? "✓ " : ""
+        if case .exited = session.presence {
+            return "\(current)\(session.displayName) — Exited"
         }
+        return "\(current)\(session.displayName)"
     }
 }

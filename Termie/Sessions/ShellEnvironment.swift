@@ -1,13 +1,14 @@
 import Foundation
+import TermieCore
 
 enum SettingsKey {
     static let shellPath = "settings.shell.path"
     static let fontSize = "settings.font.size"
     static let optionAsMeta = "settings.optionAsMeta"
     static let reportAsITerm = "settings.reportAsITerm"
-    static let beepOnAttention = "settings.beepOnAttention"
     static let useFocusedDirectory = "settings.newTerminal.useFocusedDirectory"
     static let customDirectory = "settings.newTerminal.customDirectory"
+    static let defaultTheme = "settings.defaultTheme"
 }
 
 enum ShellEnvironment {
@@ -24,7 +25,7 @@ enum ShellEnvironment {
 
     /// Environment for a login shell. `TERM` matches what VS Code and Cursor
     /// advertise. Reporting as iTerm is what makes Claude Code publish the same
-    /// tab titles, progress reports, and "needs you" notifications it sends there.
+    /// tab titles it sends there.
     static func variables(reportAsITerm: Bool) -> [String] {
         var env = ProcessInfo.processInfo.environment
         env["TERM"] = "xterm-256color"
@@ -37,5 +38,10 @@ enum ShellEnvironment {
 
     static func homeDirectory() -> String {
         FileManager.default.homeDirectoryForCurrentUser.path
+    }
+
+    static func defaultTheme() -> ShellTheme {
+        let raw = UserDefaults.standard.string(forKey: SettingsKey.defaultTheme) ?? ""
+        return ShellTheme(rawValue: raw) ?? .dark
     }
 }

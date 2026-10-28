@@ -7,6 +7,6 @@ struct SettingsWindow: View {
                 GeneralSettingsTab()
             }
         }
-        .frame(width: 480, height: 420)
+        .frame(width: 480, height: 500)
     }
 }

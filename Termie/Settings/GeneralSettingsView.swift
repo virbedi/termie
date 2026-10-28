@@ -1,13 +1,14 @@
 import SwiftUI
+import TermieCore
 
 struct GeneralSettingsTab: View {
     @AppStorage(SettingsKey.shellPath) private var shellPath = ""
     @AppStorage(SettingsKey.fontSize) private var fontSize = 13.0
     @AppStorage(SettingsKey.optionAsMeta) private var optionAsMeta = true
     @AppStorage(SettingsKey.reportAsITerm) private var reportAsITerm = true
-    @AppStorage(SettingsKey.beepOnAttention) private var beepOnAttention = false
     @AppStorage(SettingsKey.useFocusedDirectory) private var useFocusedDirectory = true
     @AppStorage(SettingsKey.customDirectory) private var customDirectory = ""
+    @AppStorage(SettingsKey.defaultTheme) private var defaultTheme = ShellTheme.dark.rawValue
 
     var body: some View {
         Form {
@@ -20,6 +21,23 @@ struct GeneralSettingsTab: View {
                 if !useFocusedDirectory {
                     TextField("Starting folder", text: $customDirectory, prompt: Text("~"))
                 }
+            }
+
+            Section("Appearance") {
+                Picker("App and new terminals", selection: $defaultTheme) {
+                    ForEach(ShellTheme.allCases, id: \.rawValue) { theme in
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(Color(theme.swatch))
+                                .frame(width: 10, height: 10)
+                            Text(theme.title)
+                        }
+                        .tag(theme.rawValue)
+                    }
+                }
+                Text("The window uses this color. New terminals start here too. Change a terminal with its color dot.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Terminal") {
@@ -37,14 +55,10 @@ struct GeneralSettingsTab: View {
                 Text("Claude Code shortcuts such as Option-Shift-Enter need this, the same setting iTerm calls “Esc+”.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-            }
-
-            Section("Attention") {
-                Toggle("Use the iTerm channel Claude already talks to", isOn: $reportAsITerm)
-                Text("Claude names iTerm tabs and notifies them when it needs you. New terminals advertise that channel so those titles and pings land here. Applies to terminals you open after changing this.")
+                Toggle("Use the iTerm channel for terminal titles", isOn: $reportAsITerm)
+                Text("Claude names iTerm tabs. New terminals advertise that channel so those titles show up here. Applies to terminals you open after changing this.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Toggle("Beep when a terminal needs you", isOn: $beepOnAttention)
             }
         }
         .formStyle(.grouped)

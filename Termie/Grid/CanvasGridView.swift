@@ -7,8 +7,8 @@ struct CanvasGridView: View {
     @State private var frames: [UnitRect] = []
     @State private var userSized = false
     @State private var cornerDrag: CornerDrag?
-    @State private var draggingID: UUID?
-    @State private var dropTargetID: UUID?
+    @State private var edgeDrag: EdgeDrag?
+    @State private var windowDrag: WindowDrag?
 
     var body: some View {
         if store.visibleSessions.isEmpty {
@@ -33,54 +33,40 @@ struct CanvasGridView: View {
         } else {
             GeometryReader { proxy in
                 let display = resolvedFrames()
+                let dropSlot = dropSlotIndex(in: display, canvasSize: proxy.size)
                 ZStack(alignment: .topLeading) {
                     ForEach(Array(store.visibleSessions.enumerated()), id: \.element.id) { index, session in
                         let unit = display[index]
                         let rect = tileRect(unit, in: proxy.size)
+                        let dragging = windowDrag?.id == session.id
+                        let resizing = edgeDrag?.tileIndex == index || cornerDrag?.tileIndex == index
+                        let aboveCover = drawsAboveOverlappingWindows(display, index: index)
                         SessionTile(
                             session: session,
-                            isDropTarget: dropTargetID == session.id,
-                            draggingID: $draggingID
+                            isDropTarget: dropSlot == index && windowDrag?.id != session.id,
+                            isDragging: dragging,
+                            onWindowDrag: { translation, location in
+                                windowDrag = WindowDrag(id: session.id, translation: translation, cursor: location)
+                                store.focus(session.id)
+                            },
+                            onWindowDrop: { location in
+                                let slot = canvasDropSlot(
+                                    frames: display,
+                                    at: unitPoint(location, in: proxy.size),
+                                    moving: index
+                                )
+                                withAnimation(.snappy(duration: 0.22)) {
+                                    store.moveVisible(session.id, toSlot: slot)
+                                    windowDrag = nil
+                                }
+                            }
                         )
                         .frame(width: rect.width, height: rect.height)
                         .position(x: rect.midX, y: rect.midY)
-                        .opacity(draggingID == session.id ? 0.35 : 1)
-                        .dropDestination(for: String.self) { items, _ in
-                            guard let raw = items.first,
-                                  let id = UUID(uuidString: raw),
-                                  id != session.id else {
-                                draggingID = nil
-                                dropTargetID = nil
-                                return false
-                            }
-                            withAnimation(.snappy(duration: 0.22)) {
-                                store.moveVisible(id, before: session.id)
-                            }
-                            draggingID = nil
-                            dropTargetID = nil
-                            return true
-                        } isTargeted: { targeted in
-                            dropTargetID = targeted ? session.id : nil
-                        }
+                        .offset(dragging ? windowDrag?.translation ?? .zero : .zero)
+                        .zIndex(dragging || resizing ? 2 : aboveCover ? 4 : 0)
 
-                        ForEach(TileCorner.allCases, id: \.self) { corner in
-                            CornerHandle(
-                                corner: corner,
-                                anchor: cornerPoint(unit, corner: corner, in: proxy.size),
-                                isDragging: cornerDrag?.tileIndex == index && cornerDrag?.corner == corner,
-                                onDrag: { location in
-                                    resizeCorner(
-                                        of: index,
-                                        corner: corner,
-                                        location: location,
-                                        in: proxy.size
-                                    )
-                                },
-                                onDragEnd: {
-                                    cornerDrag = nil
-                                }
-                            )
-                        }
+                        resizeHandles(index: index, unit: unit, in: proxy.size, raised: resizing || aboveCover)
                     }
                 }
                 .coordinateSpace(name: "canvas")
@@ -94,11 +80,13 @@ struct CanvasGridView: View {
                 userSized = false
                 frames = []
                 cornerDrag = nil
+                edgeDrag = nil
             }
             .onChange(of: store.layoutEpoch) { _, _ in
                 userSized = false
                 frames = []
                 cornerDrag = nil
+                edgeDrag = nil
             }
         }
     }
@@ -107,7 +95,7 @@ struct CanvasGridView: View {
         store.visibleSessions.map(\.id)
     }
 
-    /// Tiles are inset so adjacent shells keep a gutter the corner handles can sit in.
+    /// Tiles are inset so adjacent windows keep a gutter their edges can be grabbed in.
     private func tileRect(_ unit: UnitRect, in size: CGSize) -> CGRect {
         CGRect(
             x: unit.x * size.width + 4,
@@ -117,17 +105,79 @@ struct CanvasGridView: View {
         )
     }
 
-    private func cornerPoint(_ unit: UnitRect, corner: TileCorner, in size: CGSize) -> CGPoint {
+    @ViewBuilder
+    private func resizeHandles(index: Int, unit: UnitRect, in size: CGSize, raised: Bool) -> some View {
+        ForEach(TileEdge.allCases, id: \.self) { edge in
+            ResizeHandle(
+                cursor: edgeCursor(edge),
+                frame: edgeHitRect(unit, edge: edge, in: size),
+                onDrag: { location in
+                    resizeEdge(of: index, edge: edge, location: location, in: size)
+                },
+                onDragEnd: { edgeDrag = nil }
+            )
+            .zIndex(raised ? 3 : 1)
+        }
+        ForEach(TileCorner.allCases, id: \.self) { corner in
+            ResizeHandle(
+                cursor: cornerCursor(corner),
+                frame: cornerHitRect(unit, corner: corner, in: size),
+                onDrag: { location in
+                    resizeCorner(of: index, corner: corner, location: location, in: size)
+                },
+                onDragEnd: { cornerDrag = nil }
+            )
+            .zIndex(raised ? 3 : 1)
+        }
+    }
+
+    private func edgeHitRect(_ unit: UnitRect, edge: TileEdge, in size: CGSize) -> CGRect {
+        let thickness: CGFloat = 8
+        let rect = CGRect(
+            x: unit.minX * size.width,
+            y: unit.minY * size.height,
+            width: unit.width * size.width,
+            height: unit.height * size.height
+        )
+        switch edge {
+        case .left:
+            return CGRect(x: rect.minX - thickness / 2, y: rect.minY + 12, width: thickness, height: max(0, rect.height - 24))
+        case .right:
+            return CGRect(x: rect.maxX - thickness / 2, y: rect.minY + 12, width: thickness, height: max(0, rect.height - 24))
+        case .top:
+            return CGRect(x: rect.minX + 12, y: rect.minY - thickness / 2, width: max(0, rect.width - 24), height: thickness)
+        case .bottom:
+            return CGRect(x: rect.minX + 12, y: rect.maxY - thickness / 2, width: max(0, rect.width - 24), height: thickness)
+        }
+    }
+
+    private func cornerHitRect(_ unit: UnitRect, corner: TileCorner, in size: CGSize) -> CGRect {
+        let side: CGFloat = 14
+        let point: CGPoint
         switch corner {
         case .topLeft:
-            return CGPoint(x: unit.minX * size.width, y: unit.minY * size.height)
+            point = CGPoint(x: unit.minX * size.width, y: unit.minY * size.height)
         case .topRight:
-            return CGPoint(x: unit.maxX * size.width, y: unit.minY * size.height)
+            point = CGPoint(x: unit.maxX * size.width, y: unit.minY * size.height)
         case .bottomLeft:
-            return CGPoint(x: unit.minX * size.width, y: unit.maxY * size.height)
+            point = CGPoint(x: unit.minX * size.width, y: unit.maxY * size.height)
         case .bottomRight:
-            return CGPoint(x: unit.maxX * size.width, y: unit.maxY * size.height)
+            point = CGPoint(x: unit.maxX * size.width, y: unit.maxY * size.height)
         }
+        return CGRect(x: point.x - side / 2, y: point.y - side / 2, width: side, height: side)
+    }
+
+    private func dropSlotIndex(in frames: [UnitRect], canvasSize: CGSize) -> Int? {
+        guard let windowDrag else { return nil }
+        guard let index = store.visibleSessions.firstIndex(where: { $0.id == windowDrag.id }) else { return nil }
+        return canvasDropSlot(frames: frames, at: unitPoint(windowDrag.cursor, in: canvasSize), moving: index)
+    }
+
+    private func unitPoint(_ location: CGPoint, in size: CGSize) -> CanvasPoint {
+        CanvasPoint(
+            x: location.x / max(size.width, 1),
+            y: location.y / max(size.height, 1)
+        )
     }
 
     private func resolvedFrames() -> [UnitRect] {
@@ -135,6 +185,28 @@ struct CanvasGridView: View {
             return frames
         }
         return equalGridFrames(count: store.visibleSessions.count)
+    }
+
+    private func resizeEdge(of index: Int, edge: TileEdge, location: CGPoint, in size: CGSize) {
+        let base: [UnitRect]
+        if let edgeDrag, edgeDrag.tileIndex == index, edgeDrag.edge == edge {
+            base = edgeDrag.frames
+        } else {
+            base = resolvedFrames()
+            edgeDrag = EdgeDrag(tileIndex: index, edge: edge, frames: base)
+        }
+        let alongX = edge == .left || edge == .right
+        let position = alongX
+            ? min(max(location.x / max(size.width, 1), 0), 1)
+            : min(max(location.y / max(size.height, 1), 0), 1)
+        frames = resizeTileEdge(
+            base,
+            at: index,
+            edge: edge,
+            to: position,
+            minimum: minimumSpan(along: alongX ? .vertical : .horizontal, in: size)
+        )
+        userSized = true
     }
 
     private func resizeCorner(
@@ -174,6 +246,26 @@ struct CanvasGridView: View {
         guard length > 1 else { return 0.12 }
         return min(0.4, max(0.12, 160 / length))
     }
+
+    private func edgeCursor(_ edge: TileEdge) -> NSCursor {
+        switch edge {
+        case .left, .right: .resizeLeftRight
+        case .top, .bottom: .resizeUpDown
+        }
+    }
+
+    private func cornerCursor(_ corner: TileCorner) -> NSCursor {
+        switch corner {
+        case .topLeft, .bottomRight: WindowCursors.downRight()
+        case .topRight, .bottomLeft: WindowCursors.downLeft()
+        }
+    }
+}
+
+private struct WindowDrag {
+    var id: UUID
+    var translation: CGSize
+    var cursor: CGPoint
 }
 
 private struct CornerDrag {
@@ -182,27 +274,44 @@ private struct CornerDrag {
     var frames: [UnitRect]
 }
 
-private struct CornerHandle: View {
-    var corner: TileCorner
-    var anchor: CGPoint
-    var isDragging: Bool
+private struct EdgeDrag {
+    var tileIndex: Int
+    var edge: TileEdge
+    var frames: [UnitRect]
+}
+
+private enum WindowCursors {
+    static func downRight() -> NSCursor {
+        diagonalCursor("arrow.up.left.and.arrow.down.right")
+    }
+
+    static func downLeft() -> NSCursor {
+        diagonalCursor("arrow.up.right.and.arrow.down.left")
+    }
+
+    private static func diagonalCursor(_ symbol: String) -> NSCursor {
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil) ?? NSImage()
+        let configured = image.withSymbolConfiguration(.init(pointSize: 14, weight: .semibold)) ?? image
+        return NSCursor(image: configured, hotSpot: NSPoint(x: configured.size.width / 2, y: configured.size.height / 2))
+    }
+}
+
+private struct ResizeHandle: View {
+    var cursor: NSCursor
+    var frame: CGRect
     var onDrag: (CGPoint) -> Void
     var onDragEnd: () -> Void
 
     @State private var hovering = false
+    @State private var dragging = false
     @State private var cursorPushed = false
 
-    private let hitSize: CGFloat = 14
-    private let knobSize: CGFloat = 8
-
     var body: some View {
-        Circle()
-            .fill(Color.secondary.opacity(hovering || isDragging ? 0.85 : 0.45))
-            .frame(width: knobSize, height: knobSize)
-            .frame(width: hitSize, height: hitSize)
+        Color.clear
+            .frame(width: frame.width, height: frame.height)
             .contentShape(Rectangle())
             .onHover { hovering = $0 }
-            .onChange(of: hovering || isDragging) { _, active in
+            .onChange(of: hovering || dragging) { _, active in
                 setCursor(active)
             }
             .onDisappear {
@@ -210,16 +319,21 @@ private struct CornerHandle: View {
             }
             .highPriorityGesture(
                 DragGesture(minimumDistance: 1, coordinateSpace: .named("canvas"))
-                    .onChanged { onDrag($0.location) }
-                    .onEnded { _ in onDragEnd() }
+                    .onChanged { value in
+                        dragging = true
+                        onDrag(value.location)
+                    }
+                    .onEnded { _ in
+                        dragging = false
+                        onDragEnd()
+                    }
             )
-            .position(x: anchor.x, y: anchor.y)
-            .help("Drag corner to resize")
+            .position(x: frame.midX, y: frame.midY)
     }
 
     private func setCursor(_ active: Bool) {
         if active, !cursorPushed {
-            NSCursor.crosshair.push()
+            cursor.push()
             cursorPushed = true
         } else if !active, cursorPushed {
             NSCursor.pop()

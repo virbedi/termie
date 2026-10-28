@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Native macOS app for side-by-side login shells—named tiles, attention when a session needs you, and the shell you already use.
+  Native macOS app for side-by-side login shells—named tiles, the focused terminal highlighted, and the shell you already use.
 </p>
 
 <p align="center">
@@ -35,11 +35,11 @@ open build/Build/Products/Debug/Termie.app
 | **⌘W** | Close focused terminal |
 | **⌘⇧M** | Minimize focused terminal |
 | **⌘⇧G** | Equalize grid |
-| **⌘⇧D** | Toggle focused shell theme |
+| **⌘⇧D** | Next focused terminal color |
 | **⌘]** / **⌘[** | Next / previous |
 | **⌘1–9** | Jump to a tile |
 
-Drag the grip in a tile header to rearrange shells on the canvas; the others reflow around the drop. Drag a tile corner to resize; neighbors on that shared seam move with it. **⌘⇧G** snaps back to a nearly equal grid. Each shell can be dark or light on its own. The menu bar icon lists every session.
+Drop a file or screenshot onto a terminal to insert its path at the cursor. Drag a window by its title bar to move it. On drop, the others shift so the windows stay in a non-overlapping grid. Drag an edge or corner to resize that window. A window it covers shrinks out of the way, down to a minimum size so it stays visible. **⌘⇧G** snaps back to a nearly equal grid. The app and new terminals share a default color in Settings. Click a tile’s color dot to cycle dark, light, deep blue, gray, and deep green. The menu bar icon lists every session.
 
 ## Claude Code
 

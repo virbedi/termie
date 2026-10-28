@@ -2,8 +2,8 @@
 name: termie
 description: >-
   Works on Termie, the native macOS bento grid of login shells. Use when
-  changing sessions, terminal hosting, Claude or iTerm titles, attention
-  states, the grid layout, settings, or the Xcode project.
+  changing sessions, terminal hosting, Claude or iTerm titles, the grid
+  layout, settings, or the Xcode project.
 ---
 
 # Termie
@@ -15,10 +15,10 @@ Termie shows several real terminals in one window. The useful case is several AI
 ## Layout
 
 - App target: `Termie/`, Xcode project `Termie.xcodeproj`. The window, settings, about box, menu bar, and always-on-top behavior come from [simonweniger/swift-macos-template](https://github.com/simonweniger/swift-macos-template) (MIT, see `LICENSE`).
-- Pure logic: `Packages/TermieCore`. Title filtering, OSC interpretation, attention, equal canvas frames, session reorder, and per-shell themes live here. Add tests in `Packages/TermieCore/Tests`.
-- The main canvas starts from `equalGridFrames` so visible sessions occupy nearly equal tiles in reading order. Drag the grip in a tile header to reorder; other tiles reflow around the drop target via SwiftUI drag and drop. Drag a tile corner (`resizeTileCorner`) to resize; neighbors on the shared seams move with it. Custom sizes stay until the session set changes or Equalize runs. Focus and “needs you” change the border, not which slot a tile occupies. **⌘⇧G** (Equalize Grid) clears custom sizes and snaps back to the predetermined equal layout. Place corner handles with `position` in the grid, not `offset`.
-- Each session has its own `ShellTheme` (dark/light). Toggle from the tile, the context menu, or **⌘⇧D**. `TerminalHost` pushes SwiftTerm native colors and ANSI palette from that theme; tile chrome follows with `preferredColorScheme`.
-- Terminal view: `Termie/Sessions`. `TermieTerminalView` subclasses SwiftTerm `LocalProcessTerminalView`. Start the login shell from a usable frame (`onUsableSize` / `startIfNeeded`), not only from `updateNSView`—SwiftUI often updates the representable while bounds are still zero when a tile is added.
+- Pure logic: `Packages/TermieCore`. Title filtering, OSC interpretation, equal canvas frames, session reorder, and per-shell themes live here. Add tests in `Packages/TermieCore/Tests`.
+- The main canvas starts from `equalGridFrames` so visible sessions occupy nearly equal windows in reading order. Drag a window by its title bar; it follows the pointer and may cover the others until drop. On drop, `canvasDropSlot` plus `reorderOccupyingSlot` pack the windows back into a non-overlapping reading order. Drag any edge (`resizeTileEdge`) or corner (`resizeTileCorner`) to resize that window alone. If it covers another window, `revealCoveredWindows` shrinks the covered one out of the overlap, never below the minimum span, and stops the covering window at that footprint. Windows that still overlap draw smallest-on-top via `drawsAboveOverlappingWindows`. The hit targets are invisible and placed with `position` in the grid, not `offset`. Custom sizes stay until the session set changes or Equalize runs. The focused terminal is the one with the accent border. Focus does not change which slot a window occupies. **⌘⇧G** (Equalize Grid) clears custom sizes and snaps back to the predetermined equal layout.
+- App chrome follows the global default `ShellTheme` (`settings.defaultTheme`), not the focused tile. New terminals start on that same default. Click the color swatch, the context menu, or **⌘⇧D** to cycle a tile through dark, light, deep blue, gray, and deep green. `TerminalHost` pushes SwiftTerm colors from that theme; tile chrome is painted from the palette and must not set `preferredColorScheme`.
+- Terminal view: `Termie/Sessions`. `TermieTerminalView` subclasses SwiftTerm `LocalProcessTerminalView`. Start the login shell from a usable frame (`onUsableSize` / `startIfNeeded`), not only from `updateNSView`—SwiftUI often updates the representable while bounds are still zero when a tile is added. Dropping files or a screenshot on a terminal inserts `shellDropText` at the cursor: single-quoted paths, no newline. A screenshot that is only image data is written under the temporary `Termie` directory first. File promises use the same insertion once the file arrives.
 
 ## Shell
 
@@ -30,19 +30,9 @@ SwiftTerm is pinned to revision `4d5eeea89ed7c0fabffea9c8415cc392a6a06a31` becau
 
 ## Names
 
-Claude sets iTerm tab names with OSC 0/2. `setTerminalTitle` and OSC 0/1/2 both feed `AttentionMonitor`. `automaticSessionTitle` drops bare shell names (`zsh`, `bash`) so a later task title can replace "Terminal". A non-empty name from Rename is stored as `pinnedName` and `displayName` uses it instead of later titles. An empty name, or Use Terminal Title, clears the pin. The Terminal menu lists jump targets by session, not by a raw index, so closing a tile cannot crash the menu.
+Claude sets iTerm tab names with OSC 0/2. `setTerminalTitle` and OSC 0/1/2 both feed `automaticSessionTitle`, which drops bare shell names (`zsh`, `bash`) so a later task title can replace "Terminal". A non-empty name from Rename is stored as `pinnedName` and `displayName` uses it instead of later titles. An empty name, or Use Terminal Title, clears the pin. The Terminal menu lists jump targets by session, not by a raw index, so closing a tile cannot crash the menu. OSC 9/99/777 notifications, progress, and shell marks are parsed and ignored. A session is `running` or `exited`; there is no working or needs-you state.
 
-## Attention
-
-`AttentionMonitor` is the only place presence changes. Signals:
-
-- Output within the last 0.75s, OSC 9 progress state 1 or 3, or OSC 133 `C`: **working**.
-- Bell, OSC 9/99/777 notification, progress error or pause, or progress cleared while the tile is unfocused: **needs you**. A needs-you state stays until the tile is focused or progress reports working again. Further output does not clear it.
-- Quiet after working, with no progress and no needs-you signal: **idle**.
-
-New terminals set `TERM_PROGRAM=iTerm.app` when "Use the iTerm channel" is on, so Claude emits the same titles, progress, and notifications it sends iTerm. Bells are caught by overriding `bell(source:)` on the view. `bellStyle` is visual, so the tile flashes without a system beep unless the user turns the beep setting on.
-
-Dock badge and a local notification fire when a background tile starts needing you.
+New terminals set `TERM_PROGRAM=iTerm.app` when "Use the iTerm channel" is on, so Claude emits the same titles it sends iTerm. `bellStyle` is visual, so a bell flashes the tile without a system beep or a status change.
 
 ## Build
 

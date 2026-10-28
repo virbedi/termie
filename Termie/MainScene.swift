@@ -10,6 +10,7 @@ struct MainScene: Scene {
                 .environment(store)
                 .frame(minWidth: 880, minHeight: 560)
                 .background(AlwaysOnTop())
+                .modifier(AppAppearance())
         }
         .defaultSize(width: 1280, height: 800)
         .commands {
@@ -23,12 +24,13 @@ struct MainScene: Scene {
             MenuBarMenu()
                 .environment(store)
         } label: {
-            MenuBarIcon(store: store)
+            Image(systemName: "terminal")
         }
         .menuBarExtraStyle(.menu)
 
         Settings {
             SettingsWindow()
+                .modifier(AppAppearance())
         }
 
         Window("About Termie", id: "about") {
@@ -52,10 +54,3 @@ struct MainScene: Scene {
     }
 }
 
-private struct MenuBarIcon: View {
-    var store: SessionStore
-
-    var body: some View {
-        Image(systemName: store.attentionCount > 0 ? "terminal.fill" : "terminal")
-    }
-}

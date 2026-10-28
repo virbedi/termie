@@ -95,6 +95,30 @@ enum TerminalPalette {
                 selection: NSColor(calibratedRed: 0.72, green: 0.84, blue: 0.96, alpha: 1),
                 ansi: lightAnsi
             )
+        case .blue:
+            return Colors(
+                foreground: NSColor(calibratedRed: 0.82, green: 0.88, blue: 0.95, alpha: 1),
+                background: NSColor(calibratedRed: 0.04, green: 0.07, blue: 0.16, alpha: 1),
+                caret: NSColor(calibratedRed: 0.90, green: 0.94, blue: 0.98, alpha: 1),
+                selection: NSColor(calibratedRed: 0.14, green: 0.28, blue: 0.52, alpha: 1),
+                ansi: SwiftTerm.Color.terminalAppColors
+            )
+        case .gray:
+            return Colors(
+                foreground: NSColor(calibratedWhite: 0.86, alpha: 1),
+                background: NSColor(calibratedRed: 0.14, green: 0.15, blue: 0.16, alpha: 1),
+                caret: NSColor(calibratedWhite: 0.92, alpha: 1),
+                selection: NSColor(calibratedRed: 0.28, green: 0.29, blue: 0.31, alpha: 1),
+                ansi: SwiftTerm.Color.terminalAppColors
+            )
+        case .green:
+            return Colors(
+                foreground: NSColor(calibratedRed: 0.78, green: 0.90, blue: 0.80, alpha: 1),
+                background: NSColor(calibratedRed: 0.03, green: 0.09, blue: 0.06, alpha: 1),
+                caret: NSColor(calibratedRed: 0.86, green: 0.95, blue: 0.88, alpha: 1),
+                selection: NSColor(calibratedRed: 0.10, green: 0.28, blue: 0.18, alpha: 1),
+                ansi: SwiftTerm.Color.terminalAppColors
+            )
         }
     }
 

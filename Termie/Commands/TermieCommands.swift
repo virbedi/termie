@@ -75,9 +75,9 @@ struct TermieCommands: Commands {
 
     private var themeToggleTitle: String {
         guard let theme = store.focusedSession?.theme else {
-            return "Toggle Shell Theme"
+            return "Next Terminal Color"
         }
-        return "Use \(theme.oppositeTitle) Theme"
+        return "Use \(theme.nextTitle) Color"
     }
 
     private func focusOffset(_ delta: Int) {

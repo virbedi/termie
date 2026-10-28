@@ -24,6 +24,7 @@
 		BB000000000000000000000F /* TerminalSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000000000000000000000F /* TerminalSession.swift */; };
 		BB0000000000000000000010 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000010 /* GeneralSettingsView.swift */; };
 		BB0000000000000000000011 /* SettingsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000011 /* SettingsWindow.swift */; };
+		BB0000000000000000000019 /* AppAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000019 /* AppAppearance.swift */; };
 		BB0000000000000000000012 /* Sidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000012 /* Sidebar.swift */; };
 		BB0000000000000000000013 /* TermieApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000013 /* TermieApp.swift */; };
 		BB0000000000000000000014 /* NSWindow+AlwaysOnTop.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000014 /* NSWindow+AlwaysOnTop.swift */; };
@@ -56,6 +57,7 @@
 		AA000000000000000000000F /* TerminalSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sessions/TerminalSession.swift; sourceTree = "<group>"; };
 		AA0000000000000000000010 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/GeneralSettingsView.swift; sourceTree = "<group>"; };
 		AA0000000000000000000011 /* SettingsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/SettingsWindow.swift; sourceTree = "<group>"; };
+		AA0000000000000000000019 /* AppAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings/AppAppearance.swift; sourceTree = "<group>"; };
 		AA0000000000000000000012 /* Sidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebar/Sidebar.swift; sourceTree = "<group>"; };
 		AA0000000000000000000013 /* TermieApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TermieApp.swift; sourceTree = "<group>"; };
 		AA0000000000000000000014 /* NSWindow+AlwaysOnTop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Utilities/AppKit Extensions/NSWindow+AlwaysOnTop.swift"; sourceTree = "<group>"; };
@@ -125,6 +127,7 @@
 				AA000000000000000000000F /* TerminalSession.swift */,
 				AA0000000000000000000010 /* GeneralSettingsView.swift */,
 				AA0000000000000000000011 /* SettingsWindow.swift */,
+				AA0000000000000000000019 /* AppAppearance.swift */,
 				AA0000000000000000000012 /* Sidebar.swift */,
 				AA0000000000000000000013 /* TermieApp.swift */,
 				AA0000000000000000000014 /* NSWindow+AlwaysOnTop.swift */,
@@ -234,6 +237,7 @@
 				BB000000000000000000000F /* TerminalSession.swift in Sources */,
 				BB0000000000000000000010 /* GeneralSettingsView.swift in Sources */,
 				BB0000000000000000000011 /* SettingsWindow.swift in Sources */,
+				BB0000000000000000000019 /* AppAppearance.swift in Sources */,
 				BB0000000000000000000012 /* Sidebar.swift in Sources */,
 				BB0000000000000000000013 /* TermieApp.swift in Sources */,
 				BB0000000000000000000014 /* NSWindow+AlwaysOnTop.swift in Sources */,
